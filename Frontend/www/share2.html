@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="yes">
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, width=device-width">
+
+       
+        <link rel="stylesheet" href="css/bootstrap.min_3.3.7.css">
+        <link rel="stylesheet" href="css/bootstrap-theme.min_3.3.7.css">
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+        <script src="scripts/bootstrap.min.js"></script>
+ 
+        <style>
+            html , body{
+                font-family: none;
+            }
+            body {
+                padding-top: 70px;
+                padding-bottom: 70px;
+                overflow-x:hidden;
+            }
+            .navbar {
+                min-height : 45px;
+            }
+            .navbar-default {
+                background-image: linear-gradient(to bottom,#edf5cd 0,#909480 100%);
+                border-color:#909480;
+                background-color: #dff0d8;
+            }
+            .navbar-inverse {
+                background-image: -webkit-linear-gradient(top,#003377 0,#003377 100%);
+                top:45px;
+                border-color: #080808;
+            }
+            .navbar-inverse .navbar-brand {
+                color: #f5f5f5;
+                font-weight: bold;
+                text-shadow: 2px 2px 1px #1e1e1e;
+                white-space:nowrap;
+            }
+            .navbar-brand {
+                height: 40px;
+                line-height: 10px;
+                padding: 15px 140px;
+                font-size: 19px;
+            }
+            .navbar-default .navbar-text ,.navbar-inverse .navbar-text{
+                color: #1e1e1e;
+                font-weight: bold;
+               
+                font-size: 20px;
+                text-shadow: 2px 2px 15px #333;
+            }
+            .navbar-btn {
+                margin-top: 4px;
+            }
+            .btn {
+                padding: 6px 8px;
+                margin-top: 5px;
+                margin-left: 3px;
+            }
+            .nav-tabs > li.active > a,.nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+                background-color: #003377;
+                border:none;
+            }
+            .nav-tabs > li > a {
+                border-radius: 0 0 0 0;
+            }
+            ul li
+            {
+                list-style-type:none;
+            }
+            .btn-primary {
+                background-image: none;
+                background-color: #003377;
+                border-style: none;
+                box-shadow: none;
+            }
+            .close {
+                color:#dff0d8;
+            }
+            .nav-tabs > li > a {
+                margin-right:0;
+            }
+            .nav:after{
+               clear: none;
+            }
+            .nav-tabs > li {
+                margin-bottom: -0.5%;
+            }
+
+/*------ -------------------------------------------------- 分享內容 --------------------------------------------------*/
+            table.FcstBoxTable01{ 
+                width:100%;  
+                padding:0; 
+                margin:0 auto 20px auto; 
+                border-collapse:collapse; 
+            }
+
+	        table.FcstBoxTable01 td{ 
+                background-color:#bba073;
+                text-align:center;
+                font-family:Verdana, Arial, Helvetica, sans-serif;
+	        }
+            table.FcstBoxTable01 .translatepic {
+                background-color:#dcd4b7;
+                background-image:url(images/scootermove.gif);
+                background-size:70% 130%;
+                background-position:8vw -2vh;
+                background-repeat: no-repeat;
+                width:60%;
+                height:15vh;
+            }
+            table.FcstBoxTable01 .spotpic {
+                background-image:url(images/ninecopies.jpg);
+                background-size:100% 100%;
+                width:60%;
+                height:25vh;
+            }
+            table.FcstBoxTable01 .translatetime {
+                width:40%;
+                border-bottom-style:solid;
+                border-width:2px;
+                border-bottom-color:#dcd4b7;
+            }
+        </style>
+    </head>
+
+    <body>
+<!------ -------------------------------------------------- 上方固定列----------------------------------------------------->
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation" id="weatherTourTitle">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <p style="color:black;font-family:serif;text-align:center;font-weight:bold;text-shadow:2px 2px 2px #f6f6f6;font-size:20px;margin-top:2%;">北區一日遊</p>
+                    <big><big><p style="color:black;font-family:serif;text-align:center;font-weight:bold;text-shadow:2px 2px 2px #f6f6f6;margin-top:-1%;">2017/2/10&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;07:00~18:00</p></big></big>
+                </div>
+            </div>
+        </nav>
+       
+     
+
+
+<!------------------------------------------------------ 分享內容 ------------------------------------------------------>
+        <div style="position:relative;margin-top:3%;">
+            <div style="float:left;font-weight:bold;background-color:black">
+                <div style="height:5vh;background-color:#010102;color:#f3f3f3;font-weight:bold;line-height:5vh;text-indent:10vw">出發地 : 基隆市中正區 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 交通 : <img src="images/whitecar.png" style="position:absolute;z-index:2;left:72vw;top:-0.8vh;width:23%"></div>
+
+                <table class="FcstBoxTable01">
+                    <tr>
+                        <td class="translatepic"></td>
+                        <td class="translatetime">通勤1小時</td>
+                    </tr>
+                    <tr>
+                        <td class="spotpic"></td>
+                        <td class="translatetime">基隆&nbsp;九份&nbsp|&nbsp晴天<br>08:00~11:00</td>
+                    </tr>
+                    <tr>
+                        <td class="translatepic"></td>
+                        <td class="translatetime">通勤2小時</td>
+                    </tr>
+                    <tr>
+                        <td class="spotpic" style="background-image:url(images/pavilion.jpg)"></td>
+                        <td class="translatetime">基隆&nbsp;不厭亭&nbsp|&nbsp晴天<br>13:00~15:00</td>
+                    </tr>
+                    <tr>
+                        <td class="translatepic"></td>
+                        <td class="translatetime">通勤2.5小時</td>
+                    </tr>
+                    <tr>
+                        <td class="spotpic" style="background-image:url(images/taipei101.jpg)"></td>
+                        <td class="translatetime">台北&nbsp;台北101&nbsp|&nbsp陰天<br>17:30~18:00</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <script type="text/javascript" src="scripts/index.js"></script>
+</body>
+</html>
+
+

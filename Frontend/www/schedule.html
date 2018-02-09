@@ -1,0 +1,1407 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="yes">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, width=device-width">
+
+    <link rel="stylesheet" href="css/bootstrap.min_3.3.7.css">
+    <link rel="stylesheet" href="css/bootstrap-theme.min_3.3.7.css">
+    <link href='https://fonts.googleapis.com/earlyaccess/cwtexyen.css' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/earlyaccess/cwtexyen.css' rel='stylesheet' type='text/css'>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/editschedule_ajax.js"></script>
+    <script src="scripts/store_ajax.js"></script>
+    <script>
+        var editParameter = 0;
+        var timeLineHeight = 0;
+        var startTime, transport;
+        var lattice = 0;  //// 負責記當下欄位數,顯示欄位數字用
+        var totalLattice = 0;  //// 總欄位數
+        var scheduleLatitude;
+        var scheduleLongitude;
+        $(function () {
+
+            if (localStorage.getItem("scheduleQuantity") && localStorage.getItem("scheduleQuantity") != 0) {
+                console.log("行程數:" + localStorage.getItem("scheduleQuantity"));
+                var scheduleQuantity = Number(localStorage.getItem("scheduleQuantity"));
+            }
+            else {
+                $("#timeline").css("display", "none");
+                $("#blockimg").css("display", "none");
+            }
+
+            for (var n = 0; n < Number(localStorage.getItem("scheduleQuantity")); n++) {
+                totalLattice += Number(JSON.parse(localStorage.getItem('scheduleKey' + n)).playTime);
+            }
+            totalLattice += Number(localStorage.getItem("scheduleQuantity"));
+            /*--------------------------------------------------- 資料庫匯入JS ----------------------------------------------------------*/
+     
+            show_view();
+            /*------------------------------------------------------- 定位抓取 ----------------------------------------------------------------*/
+            if (navigator.geolocation && Number(localStorage.getItem("scheduleQuantity")) > 0) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var hyperlink = "http://maps.google.com.tw/maps?saddr=" + position.coords.latitude + "," + position.coords.longitude + "&daddr=" + JSON.parse(localStorage.getItem('scheduleKey0')).spotName;
+                    $(".leftSlideClass0Table tr:first td:nth-child(2) a").attr('href', hyperlink);
+                   
+                },
+                    function (error) {
+                        switch (error.code) {
+                            case error.TIMEOUT:
+                                alert('連線逾時');
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                alert('無法取得定位');
+                                break;
+                            case error.PERMISSION_DENIED: // 拒絕
+                                alert('請開啟GPS定位功能');
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                alert('無法取得定位，請稍候再試');
+                                break;
+                        }
+                    });
+            }
+            $("#timeline").css('top', Number(timeLineHeight) + 'vh');
+            $("#blockimg").css('height', timeLineHeight + 'vh');
+            /*--------------------------------------------- 刪除、匯出、編輯、編輯內容function ----------------------------------------------*/
+            $("#deleteButton").click(function () {
+                delete_DB();
+                $('#deleteModal').modal('toggle');
+            })
+            $("#encloseButton").click(function () {
+                enclose_DB();
+                $('#myModal').modal('toggle');
+            });
+            $("#editButton").click(function () {
+                edit_Page_DB();
+            })
+            $(".editIconLeft").click(function () {     ///編輯左滑
+                var getThisClass = "." + this.className.split(' ')[3];
+                edit_move(getThisClass);
+            })
+            $(".editMoveLeft0").click(function () {    ///編輯刪除
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = (num + 1); t < Number(localStorage.getItem("scheduleQuantity")); t++) {
+                    if ($(".editIconLeft").hasClass((getThisClass.substring(1, 15) + t))) {
+                        var getMargin = Number(($(getThisClass.substring(0, 15) + t).css("margin-top")).slice(0, -2));
+                        console.log("getMargin: " + getMargin);
+                        $(getThisClass.substring(0, 15) + t).css("margin-top", (getMargin - tableHeight) + "px");
+                    }
+                }
+                scheduleQuantity -= 1;
+                $(getTable).remove();
+                $(getHr).remove();
+                $(getSpan).remove();
+                $(getFirstBut).remove();
+                $(getSecondBut).remove();
+                $(getDeleteBut).remove();
+                $(getThirdBut).remove();
+                $(getFourthBut).remove();
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft1").click(function () {    ///編輯上移
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+             
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = num; t > 0; t--) {
+                    var previous = getThisClass.substring(1, 15) + (t - 1);
+                    if ($("table").hasClass(previous + "Table")) {
+                        console.log("aa");
+                        var previousTable = "." + previous + "Table";
+                        var previousSpan = "." + previous;
+                        var previousHr = "." + previous + "Hr";
+                        var previousDelete = "." + previous + "Delete";
+                        var previousFirst = "." + previous + "First";
+                        var previousSecond = "." + previous + "Second";
+                        var previousThird = "." + previous + "Third";
+                        var previousFourth = "." + previous + "Fourth";
+
+                        var newOffsetTop = Number($(previousTable).offset().top);
+                        var newSpanTop = Number($(previousTable).offset().top) + (tableHeight / 2) - 10;
+                        var newHrTop = (Number($(previousTable).offset().top) + tableHeight) * 0.997;
+                        var newDeleteTop = Number($(getDeleteBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+                        var newFisrtRow = Number($(getFirstBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSecondRow = Number($(getThirdBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+
+                        var previousNewTop = newOffsetTop + tableHeight;
+                        var previousSpanTop = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) / 2 - 10;
+                        var previousHrTop = (newOffsetTop + tableHeight + Number(($(previousTable).css("height")).slice(0, -2))) * 0.997;
+                        var previousDeleteTop = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) / 3;
+                        var previousFirstRow = newOffsetTop + tableHeight;
+                        var previousSecondRow = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) * 2 / 3;
+
+                        var $table = $(this).closest(".spotTable");
+                        $table.fadeIn();
+                        $table.prev().before($table);
+                        
+                        $(getSpan).offset({ top: newSpanTop });
+                        $(previousSpan).offset({ top: previousSpanTop });
+
+                        ///   class互換   ///
+                        $(getTable).removeClass(getTable.substring(1, 22)).addClass("changeClass1");
+                        $(previousTable).removeClass(previousTable.substring(1, 22)).addClass("changeClass2");
+                        $(".changeClass1").removeClass("changeClass1").addClass(previousTable.substring(1, 22));
+                        $(".changeClass2").removeClass("changeClass2").addClass(getTable.substring(1, 22));
+
+                        $(getSpan).removeClass(getSpan.substring(1, 17)).addClass("changeSpanClass1");
+                        $(previousSpan).removeClass(previousSpan.substring(1, 17)).addClass("changeSpanClass2");
+                        $(".changeSpanClass1").removeClass("changeSpanClass1").addClass(previousSpan.substring(1, 17));
+                        $(".changeSpanClass2").removeClass("changeSpanClass2").addClass(getSpan.substring(1, 17));
+
+                        $(getHr).removeClass(getHr.substring(1, 19)).addClass("changeHrClass1");
+                        $(previousHr).removeClass(previousHr.substring(1, 19)).addClass("changeHrClass2");
+                        $(".changeHrClass1").removeClass("changeHrClass1").addClass(previousHr.substring(1, 19));
+                        $(".changeHrClass2").removeClass("changeHrClass2").addClass(getHr.substring(1, 19));
+
+                        $(getDeleteBut).removeClass(getDeleteBut.substring(1, 23)).addClass("changeDeleteClass1");
+                        $(previousDelete).removeClass(previousDelete.substring(1, 23)).addClass("changeDeleteClass2");
+                        $(".changeDeleteClass1").removeClass("changeDeleteClass1").addClass(previousDelete.substring(1, 23));
+                        $(".changeDeleteClass2").removeClass("changeDeleteClass2").addClass(getDeleteBut.substring(1, 23));
+
+                        $(getFirstBut).removeClass(getFirstBut.substring(1, 22)).addClass("changeFirstClass1");
+                        $(previousFirst).removeClass(previousFirst.substring(1, 22)).addClass("changeFirstClass2");
+                        $(".changeFirstClass1").removeClass("changeFirstClass1").addClass(previousFirst.substring(1, 22));
+                        $(".changeFirstClass2").removeClass("changeFirstClass2").addClass(getFirstBut.substring(1, 22));
+
+                        $(getSecondBut).removeClass(getSecondBut.substring(1, 23)).addClass("changeSecondClass1");
+                        $(previousSecond).removeClass(previousSecond.substring(1, 23)).addClass("changeSecondClass2");
+                        $(".changeSecondClass1").removeClass("changeSecondClass1").addClass(previousSecond.substring(1, 23));
+                        $(".changeSecondClass2").removeClass("changeSecondClass2").addClass(getSecondBut.substring(1, 23));
+
+                        $(getThirdBut).removeClass(getThirdBut.substring(1, 22)).addClass("changeThirdClass1");
+                        $(previousThird).removeClass(previousThird.substring(1, 22)).addClass("changeThirdClass2");
+                        $(".changeThirdClass1").removeClass("changeThirdClass1").addClass(previousThird.substring(1, 22));
+                        $(".changeThirdClass2").removeClass("changeThirdClass2").addClass(getThirdBut.substring(1, 22));
+
+                        $(getFourthBut).removeClass(getFourthBut.substring(1, 23)).addClass("changeFourthClass1");
+                        $(previousFourth).removeClass(previousFourth.substring(1, 23)).addClass("changeFourthClass2");
+                        $(".changeFourthClass1").removeClass("changeFourthClass1").addClass(previousFourth.substring(1, 23));
+                        $(".changeFourthClass2").removeClass("changeFourthClass2").addClass(getFourthBut.substring(1, 23));
+
+                        break;
+                    }
+                }
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft2").click(function () {    ///編輯下移
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                    var previous = getThisClass.substring(1, 15) + (t + 1);
+
+                    if ($("table").hasClass(previous + "Table")) {
+                        var previousTable = "." + previous + "Table";
+                        var previousSpan = "." + previous;
+                        var previousHr = "." + previous + "Hr";
+                        var previousDelete = "." + previous + "Delete";
+                        var previousFirst = "." + previous + "First";
+                        var previousSecond = "." + previous + "Second";
+                        var previousThird = "." + previous + "Third";
+                        var previousFourth = "." + previous + "Fourth";
+
+                        var previousNewTop = Number($(getTable).offset().top);
+                        var previousSpanTop = Number($(getTable).offset().top) + (Number(($(previousTable).css("height")).slice(0, -2))) / 2 - 10;
+                        var previousHrTop = (Number($(getTable).offset().top) + Number(($(previousTable).css("height")).slice(0, -2))) * 0.997;
+                        var previousDeleteTop = Number($(previousTable).offset().top) - tableHeight + Number(($(previousTable).css("height")).slice(0, -2)) / 3;
+                        var previousFirstRow = Number($(previousTable).offset().top) - tableHeight;
+                        var previousSecondRow = Number($(previousTable).offset().top) - tableHeight + Number(($(previousTable).css("height")).slice(0, -2)) * 2 / 3;
+                        var newOffsetTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSpanTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight / 2 - 10;
+                        var newHrTop = (previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight) * 0.997;
+                        var newDeleteTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight / 3;
+                        var newFisrtRow = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSecondRow = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight * 2 / 3;
+
+                       
+                        var $table = $(this).closest(".spotTable");
+                        console.log("down");
+                        $table.fadeIn();
+                        $table.next().after($table);
+                        
+
+                        $(getSpan).offset({ top: newSpanTop });
+                        $(previousSpan).offset({ top: previousSpanTop });
+
+                        ///   class互換   ///
+                        $(getTable).removeClass(getTable.substring(1, 22)).addClass("changeClass1");
+                        $(previousTable).removeClass(previousTable.substring(1, 22)).addClass("changeClass2");
+                        $(".changeClass1").removeClass("changeClass1").addClass(previousTable.substring(1, 22));
+                        $(".changeClass2").removeClass("changeClass2").addClass(getTable.substring(1, 22));
+
+                        $(getSpan).removeClass(getSpan.substring(1, 17)).addClass("changeSpanClass1");
+                        $(previousSpan).removeClass(previousSpan.substring(1, 17)).addClass("changeSpanClass2");
+                        $(".changeSpanClass1").removeClass("changeSpanClass1").addClass(previousSpan.substring(1, 17));
+                        $(".changeSpanClass2").removeClass("changeSpanClass2").addClass(getSpan.substring(1, 17));
+
+                        $(getHr).removeClass(getHr.substring(1, 19)).addClass("changeHrClass1");
+                        $(previousHr).removeClass(previousHr.substring(1, 19)).addClass("changeHrClass2");
+                        $(".changeHrClass1").removeClass("changeHrClass1").addClass(previousHr.substring(1, 19));
+                        $(".changeHrClass2").removeClass("changeHrClass2").addClass(getHr.substring(1, 19));
+
+                        $(getDeleteBut).removeClass(getDeleteBut.substring(1, 23)).addClass("changeDeleteClass1");
+                        $(previousDelete).removeClass(previousDelete.substring(1, 23)).addClass("changeDeleteClass2");
+                        $(".changeDeleteClass1").removeClass("changeDeleteClass1").addClass(previousDelete.substring(1, 23));
+                        $(".changeDeleteClass2").removeClass("changeDeleteClass2").addClass(getDeleteBut.substring(1, 23));
+
+                        $(getFirstBut).removeClass(getFirstBut.substring(1, 22)).addClass("changeFirstClass1");
+                        $(previousFirst).removeClass(previousFirst.substring(1, 22)).addClass("changeFirstClass2");
+                        $(".changeFirstClass1").removeClass("changeFirstClass1").addClass(previousFirst.substring(1, 22));
+                        $(".changeFirstClass2").removeClass("changeFirstClass2").addClass(getFirstBut.substring(1, 22));
+
+                        $(getSecondBut).removeClass(getSecondBut.substring(1, 23)).addClass("changeSecondClass1");
+                        $(previousSecond).removeClass(previousSecond.substring(1, 23)).addClass("changeSecondClass2");
+                        $(".changeSecondClass1").removeClass("changeSecondClass1").addClass(previousSecond.substring(1, 23));
+                        $(".changeSecondClass2").removeClass("changeSecondClass2").addClass(getSecondBut.substring(1, 23));
+
+                        $(getThirdBut).removeClass(getThirdBut.substring(1, 22)).addClass("changeThirdClass1");
+                        $(previousThird).removeClass(previousThird.substring(1, 22)).addClass("changeThirdClass2");
+                        $(".changeThirdClass1").removeClass("changeThirdClass1").addClass(previousThird.substring(1, 22));
+                        $(".changeThirdClass2").removeClass("changeThirdClass2").addClass(getThirdBut.substring(1, 22));
+
+                        $(getFourthBut).removeClass(getFourthBut.substring(1, 23)).addClass("changeFourthClass1");
+                        $(previousFourth).removeClass(previousFourth.substring(1, 23)).addClass("changeFourthClass2");
+                        $(".changeFourthClass1").removeClass("changeFourthClass1").addClass(previousFourth.substring(1, 23));
+                        $(".changeFourthClass2").removeClass("changeFourthClass2").addClass(getFourthBut.substring(1, 23));
+
+                        break;
+                    }
+                }
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft3").click(function () {    ///編輯加時
+                var getThisClass = "." + this.className.split(' ')[3];
+                console.log(getThisClass);
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                var nowRow = Number($(getTable + " .tableRowspan").attr("rowspan"));
+                if (nowRow < 8) {
+                    $(getTable + " .tableRowspan").attr("rowspan", (nowRow + 1));
+                    $(getTable + " tr:last").after("<tr><td><span class='spanLattice' style='display:none;'>new</span></td></tr>");
+                    var newTableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                    var newSpanTop = Number($(getSpan).css("margin-top").slice(0, -2)) + (newTableHeight - tableHeight) / 2;
+                    var newButtonHeight = newTableHeight / 3;
+
+                    var newFirstRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight);
+                    var newDeleteBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight) + newButtonHeight;
+                    var newSecondRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight) + newButtonHeight * 2;
+                    var newHrTop = Number($(getTable).offset().top) + newTableHeight;
+                    var newImgTop;
+                    switch ((nowRow + 1)) {
+                        case 1: newImgTop = -10; break;
+                        case 2: newImgTop = -30; break;
+                        case 3: newImgTop = -50; break;
+                        case 4: newImgTop = -70; break;
+                        case 5: newImgTop = -90; break;
+                        case 6: newImgTop = -110; break;
+                        case 7: newImgTop = -130; break;
+                        case 8: newImgTop = -150; break;
+                        default: break;
+                    }
+
+                    $(getSpan).css("margin-top", newSpanTop + "px");
+                    $(getFirstBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getSecondBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getDeleteBut).css({ "height": newButtonHeight + "px", "margin-top": newDeleteBut + "px" });
+                    $(getThirdBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getFourthBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getTable + " .tableRowspan span img").css("margin-top", newImgTop + "%");
+
+                    for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                        var next = getThisClass.substring(1, 15) + (t + 1);
+                        if ($("table").hasClass(next + "Table")) {
+                            var nextSpan = "." + next;
+                            var newTop = Number($(nextSpan).css("margin-top").slice(0, -2));
+                            $(nextSpan).css("margin-top", newTop + newTableHeight - tableHeight + "px")
+                        }
+                    }
+                    /// 資料庫 ///
+                }
+            })
+            $(".editMoveLeft4").click(function () {    ///編輯減時
+                var getThisClass = "." + this.className.split(' ')[3];
+                console.log(getThisClass);
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                var nowRow = Number($(getTable + " .tableRowspan").attr("rowspan"));
+                if (nowRow > 1) {
+                    $(getTable + " .tableRowspan").attr("rowspan", (nowRow - 1));
+                    $(getTable + " tr:last").remove();
+                    var newTableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                    var newSpanTop = Number($(getSpan).css("margin-top").slice(0, -2)) - (tableHeight - newTableHeight) / 2;
+                    var newButtonHeight = newTableHeight / 3;
+
+                    var newFirstRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + (tableHeight - newTableHeight);
+                    var newDeleteBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + newTableHeight / 3 + (tableHeight - newTableHeight);
+                    var newSecondRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + newTableHeight * 2 / 3 + (tableHeight - newTableHeight);
+                    var newHrTop = Number($(getTable).offset().top) + newTableHeight;
+                    var newImgTop;
+                    switch ((nowRow - 1)) {
+                        case 1: newImgTop = -10; break;
+                        case 2: newImgTop = -30; break;
+                        case 3: newImgTop = -50; break;
+                        case 4: newImgTop = -70; break;
+                        case 5: newImgTop = -90; break;
+                        case 6: newImgTop = -110; break;
+                        case 7: newImgTop = -130; break;
+                        case 8: newImgTop = -150; break;
+                        default: break;
+                    }
+
+                    $(getSpan).css("margin-top", newSpanTop + "px");
+                    $(getFirstBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getSecondBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getDeleteBut).css({ "height": newButtonHeight + "px", "margin-top": newDeleteBut + "px" });
+                    $(getThirdBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getFourthBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getTable + " .tableRowspan span img").css("margin-top", newImgTop + "%");
+
+                    for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                        var next = getThisClass.substring(1, 15) + (t + 1);
+                        if ($("table").hasClass(next + "Table")) {
+                            var nextSpan = "." + next;
+                            var newTop = Number($(nextSpan).css("margin-top").slice(0, -2));
+                            $(nextSpan).css("margin-top", newTop - (tableHeight - newTableHeight) + "px");
+                        }
+                    }
+                    /// 資料庫 ///
+                }
+            })
+            /*----------------------------------------------------- 選單收回function-----------------------------------------------------------*/
+            $("body").click(function (e) {
+                if ($(e.target).hasClass('ui-content') || $(e.target).hasClass('menuClick')) {
+                    console.log("aa");
+                }
+                else {
+                    $("#menu").animate({ left: '-75%' }, "200");
+                    $("#weatherTourTitle").animate({ left: '0' }, "200");
+                    $("#settingTitle").animate({ left: '0' }, "200");
+                    $("#nameTitle").animate({ "margin-left": '0' }, "200");
+                    $("#scheduleTitle").animate({ "margin-left": '0' }, "200");
+                    $("#scheduleInput").animate({ left: '0' }, "200");
+                    $("body").css("overflow-y", "auto");
+                    $("#menuBlock").css("display", "none");
+                    menustate = 0;
+                }
+            })
+
+        })
+        /*--------------------------------------------------- 資料庫匯入JS ----------------------------------------------------------*/
+
+        function show_view() {
+            $("#scheduleContent").html("");
+            
+            var a = "";  //// schedule內容
+            var lat = localStorage.getItem("latitude"), lon = localStorage.getItem("longitude");
+            for (var i = 0; i < Number(localStorage.getItem("scheduleQuantity")); i++) {
+                var lastLattice = lattice;
+                var weatherIconTop;
+                var scheduleDB = JSON.parse(localStorage.getItem('scheduleKey' + i));
+                startTime = JSON.parse(localStorage.getItem('scheduleKey0')).departureTime;
+                transport = JSON.parse(localStorage.getItem('scheduleKey0')).transportation.slice(7, -4);
+                switch (Number(scheduleDB.playTime)) {
+                    case 1: weatherIconTop = -10; break;
+                    case 2: weatherIconTop = -30; break;
+                    case 3: weatherIconTop = -50; break;
+                    case 4: weatherIconTop = -70; break;
+                    case 5: weatherIconTop = -90; break;
+                    case 6: weatherIconTop = -110; break;
+                    case 7: weatherIconTop = -130; break;
+                    case 8: weatherIconTop = -150; break;
+                    default: break;
+                }
+                if (i == 0) {     //// 第一個行程導航現在位置
+                    a += ("<div class='spotTable'><p class='scheduleID' style='display:none;'>" + scheduleDB.spotID + "</p><table class='leftSlideClass" + i + "Table' style='word-break:break-all;'><tr><td><span class='spanLattice'>" + (lattice + 1) + "</span></td><td style='background-image:url(" + (scheduleDB.transportation).slice(0, -4) + "move.gif);background-size:90% 280%;background-position:5vw -8vh; background-repeat: no-repeat;'><a target='_blank' href='http://maps.google.com.tw/maps?saddr=" + lat + "," + lon + "&daddr=" + scheduleDB.spotName + "'><span class='glyphicon glyphicon-map-marker' aria-hidden='true' style='position:relative;right:-45%;top:-22%;'></span></a><p class='moveTime'>(" + scheduleDB.departureTime.substring(11, 16) + "~" + scheduleDB.arrivalTime + ")</p></td></tr><tr><td><span class='spanLattice'>" + (lattice + 2) + "</span></td><td class='tableRowspan' spotid=" + scheduleDB.spotID+"  rowspan='" + scheduleDB.playTime + "' style='background-image:url(" + scheduleDB.spotPicture + ");background-size:100% 100%'><span><img src='" + scheduleDB.weatherIcon + "' style='height: 41px;width: 41px;position: relative;right: -43%; margin-top: " + weatherIconTop + "%'></span></td></tr>");
+                    timeLine(scheduleDB.departureTime, scheduleDB.arrivalTime, Number(scheduleDB.playTime));
+                }
+                else {            //// 其餘行程導航兩景點之名子
+                    a += ("<div class='spotTable'><p class='scheduleID' style='display:none;'>" + scheduleDB.spotID + "</p><table class='leftSlideClass" + i + "Table' style='word-break:break-all;'><tr><td><span class='spanLattice'>" + (lattice + 1) + "</span></td><td style='background-image:url(" + (scheduleDB.transportation).slice(0, -4) + "move.gif);background-size:90% 280%;background-position:5vw -8vh; background-repeat: no-repeat;'><a target='_blank' href='http://maps.google.com.tw/maps?saddr=" + JSON.parse(localStorage.getItem('scheduleKey' + (i - 1))).spotName + "&daddr=" + scheduleDB.spotName + "'><span class='glyphicon glyphicon-map-marker' aria-hidden='true' style='position:relative;right:-45%;top:-22%;'></span></a><p class='moveTime'>(" + scheduleDB.departureTime.substring(11, 16) + "~" + scheduleDB.arrivalTime + ")</p></td></tr><tr><td><span class='spanLattice'>" + (lattice + 2) + "</span></td><td class='tableRowspan' spotid=" + scheduleDB.spotID +"  rowspan='" + scheduleDB.playTime + "' style='background-image:url(" + scheduleDB.spotPicture + ");background-size:100% 100%'><span><img src='" + scheduleDB.weatherIcon + "' style='height: 41px;width: 41px;position: relative;right: -43%; margin-top: " + weatherIconTop + "%'></span></td></tr>");
+                    timeLine(scheduleDB.departureTime, scheduleDB.arrivalTime, Number(scheduleDB.playTime));
+                }
+                lattice += 2;
+
+                for (var j = 1; j < scheduleDB.playTime; j++) {  //// 依 playTime 所占掉的 rowspan 來加入所需的 <tr> 數
+                    a += "<tr><td><span class='spanLattice'>" + (lattice + j) + "</span></td></tr>";
+
+                }
+
+                a += "</table>";
+                lattice = (lattice + j - 1);
+                a += ("<span class='glyphicon glyphicon-minus-sign editIconLeft leftSlideClass" + i + "' style='margin-top:" + ((lastLattice * 10 + (Number(scheduleDB.playTime) + 1) * 5) - 2) + "vh;'></span><hr class='editHr leftSlideClass" + i + "Hr'><div class='buttonDiv'><button type='button' class='btn btn-default editMoveLeft1 leftSlideClass" + i + "First' aria-label='Left Align' style='margin-top:" + ((Number(scheduleDB.playTime) + 1) * -10) + "vh;height:" + ((Number(scheduleDB.playTime) + 1) * 10 / 3) + "vh;'><span class='glyphicon glyphicon-triangle-top editSpan' aria-hidden='true'></span></button><button type='button' class='btn btn-default editMoveLeft2 leftSlideClass" + i + "Second' aria-label='Left Align' style='margin-top:" + ((Number(scheduleDB.playTime) + 1) * -10) + "vh;height:" + ((Number(scheduleDB.playTime) + 1) * 10 / 3) + "vh;'><span class='glyphicon glyphicon-triangle-bottom editSpan' aria-hidden='true'></span></button><button type='button' class='btn btn-danger editMoveLeft0 leftSlideClass" + i + "Delete' style='margin-top:" + ((Number(scheduleDB.playTime) + 1) * -20 / 3) + "vh;height:" + ((Number(scheduleDB.playTime) + 1) * 10 / 3) + "vh;'>刪除</button><button type='button' class='btn btn-default editMoveLeft3 leftSlideClass" + i + "Third' aria-label='Left Align' style='margin-top:" + ((Number(scheduleDB.playTime) + 1) * -10 / 3) + "vh;height:" + ((Number(scheduleDB.playTime) + 1) * 10 / 3) + "vh;'><span class='glyphicon glyphicon-plus-sign editSpan' aria-hidden='true'></span></button><button type='button' class='btn btn-default editMoveLeft4 leftSlideClass" + i + "Fourth' aria-label='Left Align' style='margin-top:" + ((Number(scheduleDB.playTime) + 1) * -10 / 3) + "vh;height:" + ((Number(scheduleDB.playTime) + 1) * 10 / 3) + "vh;'><span class='glyphicon glyphicon-minus-sign editSpan' aria-hidden='true'></span></button></div></div>");
+            }            
+            $("#scheduleContent").html(a);
+            clickActivity();
+        }
+        /*------------------------------------------------------ 選單JS ----------------------------------------------------------*/
+        var menustate = 0;
+        function clickMenu() {
+            if (menustate == 0) {
+                $("#menu").animate({ left: '0' }, "200", function () { menustate = 1; $("#menuBlock").css("display", "block");});
+                $("#weatherTourTitle").animate({ left: '75%' }, "200");
+                $("#settingTitle").animate({ left: '75%' }, "200");
+                $("#nameTitle").animate({ "margin-left": '75%' }, "200");
+                $("#scheduleTitle").animate({ "margin-left": '75%' }, "200");
+                $("#scheduleInput").animate({ left: '75%' }, "200");
+                $("body").css("overflow-y", "hidden");
+            }
+            else {
+                $("#menu").animate({ left: '-75%' }, "200");
+                $("#weatherTourTitle").animate({ left: '0' }, "200");
+                $("#settingTitle").animate({ left: '0' }, "200");
+                $("#nameTitle").animate({ "margin-left": '0' }, "200");
+                $("#scheduleTitle").animate({ "margin-left": '0' }, "200");
+                $("#scheduleInput").animate({ left: '0' }, "200");
+                $("body").css("overflow-y", "auto");
+                $("#menuBlock").css("display", "none");
+                menustate = 0;
+            }
+        }
+        /*-------------------------------------------------------- 清空行程 ----------------------------------------------------------*/
+        function delete_DB() {
+            for (var i = 0; i < Number(localStorage.getItem("scheduleQuantity")) ; i++) {
+                localStorage.removeItem('scheduleKey' + i);
+            }
+            $("#timeline").css("display", "none"); 
+            $("#blockimg").css("display", "none");
+            $("#scheduleContent").html("");
+            localStorage.setItem("scheduleQuantity", 0);
+        }
+        /*-------------------------------------------------------- 封裝行程 ----------------------------------------------------------*/
+        function enclose_DB() {
+            var shareObj = '{ "encloseid":"", "enclosename":"","startPosition":"","transoprt":"", "viewpoint":""}';
+            var temp = "";
+            if (Number(localStorage.getItem("scheduleQuantity")) > 0) {
+                for (var k = 0; k < Number(localStorage.getItem("scheduleQuantity")) ; k++) {
+                    var tempobj = JSON.parse('{ "departureTime":"", "arrivalTime":"", "playTime":"", "spotName":"", "weatherIcon":"",   "spotID":"", "spotPicture":""}');
+                    var scheduleDB = JSON.parse(localStorage.getItem('scheduleKey' + k));
+                    if (k != 0)
+                        temp += ",";
+                    tempobj.departureTime = scheduleDB.departureTime;
+                    tempobj.arrivalTime = scheduleDB.arrivalTime;
+                    tempobj.playTime = scheduleDB.playTime;
+                    tempobj.spotName = scheduleDB.spotName.slice(1,-2);
+                    tempobj.weatherIcon = scheduleDB.weatherIcon;             
+                    tempobj.spotID = scheduleDB.spotID;
+                    tempobj.spotPicture = scheduleDB.spotPicture;
+                    temp += JSON.stringify(tempobj);
+                }
+                var objs = JSON.parse(localStorage.getItem('scheduleKey' + 0));
+                shareObj = JSON.parse(shareObj);
+                shareObj.encloseid = RandomNumber();
+                shareObj.enclosename = $("#encloseName").val();
+                scheduleLongitude = $(".leftSlideClass0Table tr:first td:nth-child(2) a").attr('href').split('=')[1].split(',')[0];
+                scheduleLatitude = $(".leftSlideClass0Table tr:first td:nth-child(2) a").attr('href').split('=')[1].split(',')[1].split('&')[0];
+                shareObj.startPosition = scheduleLongitude + "," + scheduleLatitude;
+                shareObj.transport = objs.transportation;
+                shareObj.viewpoint = JSON.stringify(JSON.parse("[" + temp + "]"));
+                //ajax
+                store_ajax(shareObj.encloseid, shareObj.enclosename, shareObj.startPosition, shareObj.transport, JSON.stringify(JSON.parse("[" + temp + "]")));
+                var num = Number(localStorage.getItem("shareQuantity"));
+                if (!num)
+                    num = 0;
+                localStorage.setItem('shareKey' + num, JSON.stringify(shareObj));
+                num++;
+                localStorage.setItem("shareQuantity", num);
+                delete_DB();
+            }
+        }
+        function RandomNumber() {
+            var array1 = new Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
+            var Str = "";
+            for (var n = 1; n <= 10; n++) {
+
+                index = Math.floor(Math.random() * array1.length);
+                Str = Str + array1[index];
+            }
+            return Str;
+        }
+        /*----------------------------------------------------------- 時間軸JS ----------------------------------------------------------*/
+        function timeLine(depart_time, arrive_time, play_time) {
+            var date = new Date();
+
+            var nowday = date.getDate();
+            var departday = Number(depart_time.substring(8, 10));
+
+            var nowTotleMin = Number(Number(date.getMinutes()) + (Number(date.getHours()) * 60));
+            var departTotleMin = Number(Number(depart_time.substring(14, 16)) + (Number(depart_time.substring(11, 13)) * 60));
+            var arriveTotleMin = Number(Number(arrive_time.substring(3, 5)) + (Number(arrive_time.substring(0, 2)) * 60));
+            var playtimeTotleMin = Number(arriveTotleMin + (play_time * 60));
+
+            if (nowday < departday || ((nowday == departday) && (nowTotleMin < departTotleMin))) {
+                ///未到時間不做事 timeLineHeight 依舊為0
+                /*console.log("aa");
+                console.log(nowday + "," + departday + "," + nowTotleMin + "," + departTotleMin + "," + arriveTotleMin + "," + playtimeTotleMin);
+                console.log("timeLineHeight:" + timeLineHeight);*/
+            }
+            else if (((nowday == departday) && (nowTotleMin >= departTotleMin) && (nowTotleMin < arriveTotleMin)) || (((nowday + 1) == departday) && (nowTotleMin < arriveTotleMin))) {
+                timeLineHeight += ((nowTotleMin - departTotleMin) / (arriveTotleMin - departTotleMin)).toFixed(2) * 10;
+                /*console.log("bb");
+                console.log(nowday + "," + departday + "," + nowTotleMin + "," + departTotleMin + "," + arriveTotleMin + "," + playtimeTotleMin);
+                console.log("timeLineHeight:" + Number(timeLineHeight));*/
+            }
+            else if (((nowday == departday) && (nowTotleMin >= arriveTotleMin) && (nowTotleMin < playtimeTotleMin)) || (((nowday + 1) == departday) && (nowTotleMin < playtimeTotleMin))) {
+                timeLineHeight += 10 + (((nowTotleMin - arriveTotleMin) / (playtimeTotleMin - arriveTotleMin)).toFixed(2) * 10 * play_time);
+                /*console.log("cc");
+                console.log(nowday + "," + departday + "," + nowTotleMin + "," + departTotleMin + "," + arriveTotleMin + "," + playtimeTotleMin);
+                console.log("timeLineHeight:" + timeLineHeight);*/
+            }
+            else {
+                timeLineHeight += 10 + 10 * play_time;
+                /* console.log("dd");
+                 console.log(nowday + "," + departday + "," + nowTotleMin + "," + departTotleMin + "," + arriveTotleMin + "," + playtimeTotleMin);
+                 console.log("timeLineHeight:" + timeLineHeight);*/
+            }
+        }
+        /*-------------------------------------------------------- 編輯行程 ----------------------------------------------------------*/
+        function edit_Page_DB() {
+            if (localStorage.getItem("scheduleQuantity")) {
+                if (editParameter == 0) {
+                    $("#editSpan").removeClass("glyphicon-pencil");
+                    $("#editSpan").addClass("glyphicon-ok");
+                    $("#timeline").css("display", "none");
+                    $("#blockimg").css("display", "none");
+                    $("table").css("width", "90%");
+                    $("table").css("margin-left", "10%");
+                    $(".moveTime").css("font-size", "13px");
+                    $(".editIconLeft").css("display", "block");
+                    $(".editIconLeft").css("margin-left", "1.5%");
+                    $(".editHr").css("display", "block");
+                    $(".spanLattice").css("display", "none");
+                    editParameter = 1;
+                }
+                else {
+                    $("#editSpan").removeClass("glyphicon-ok");
+                    $("#editSpan").addClass("glyphicon-pencil");
+                    $("#timeline").css("display", "block");
+                    $("#blockimg").css("display", "block");
+                    $("table").css("width", "100%");
+                    $("table").css("margin-left", "0%");
+                    $(".moveTime").css("font-size", "16px");
+                    $(".editIconLeft").css("display", "none");
+                    $(".editHr").css("display", "none");
+                    $(".editIconLeft").css("display", "none");
+                    $(".editMoveLeft3 , .editMoveLeft1 , .editMoveLeft0").css("margin-left", "100%");
+                    $(".editMoveLeft2 , .editMoveLeft4").css("margin-left", "110.25%");
+                    $(".spanLattice").css("display", "block");
+                    console.log("aa");
+                    editParameter = 0;
+                    /// 資料送後端、寫入資料庫、依資料庫重整頁面寫入 ///
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(function (position) {
+                            var latitude = position.coords.latitude;
+                            var longitude = position.coords.longitude;
+                            editschedule_ajax(latitude, longitude);
+                        },
+                            function (error) {
+                                switch (error.code) {
+                                    case error.TIMEOUT:
+                                        alert('連線逾時');
+                                        break;
+                                    case error.POSITION_UNAVAILABLE:
+                                        alert('無法取得定位');
+                                        break;
+                                    case error.PERMISSION_DENIED: // 拒絕
+                                        alert('請開啟GPS定位功能');
+                                        break;
+                                    case error.UNKNOWN_ERROR:
+                                        alert('無法取得定位，請稍候再試');
+                                        break;
+                                }
+                            });
+                    }
+                      
+                    
+                }
+            }
+        }
+        /*-------------------------------------------------------- 編輯選單 ----------------------------------------------------------*/
+        function edit_move(getThis) {
+            var thisTable = getThis + "Table";
+            var thisDelete = getThis + "Delete";
+            var thisFirstButton = getThis + "First";
+            var thisSecondButton = getThis + "Second";
+            var thisThirdButton = getThis + "Third";
+            var thisFourthButton = getThis + "Fourth";
+
+            $("html").click(function (e) {
+                if ($(e.target).hasClass('editMoveLeft1') || $(e.target).hasClass('editMoveLeft2') || $(e.target).hasClass('editMoveLeft3') || $(e.target).hasClass('editMoveLeft4') || $(e.target).hasClass('editSpan') || $(e.target).attr("id") == "editButton" || $(e.target).attr("id") == 'editSpan') {
+                }
+                else {
+                    $(".editIconLeft").css("margin-left", "1.5%");            ///減號
+                    $("table").css("margin-left", "10%");          ///表格
+                    $(".editMoveLeft0").css("margin-left", "100%");        ///刪除鈕
+                    $(".editMoveLeft1").css("margin-left", "100%");   ///上移鈕
+                    $(".editMoveLeft2").css("margin-left", "100%");   ///加時鈕
+                    $(".editMoveLeft3").css("margin-left", "110.25%"); ///下移鈕
+                    $(".editMoveLeft4").css("margin-left", "110.25%"); ///減時鈕
+                }
+            })
+            $(getThis).animate({ "margin-left": "-10%" }, "200");            ///減號
+            $(thisTable).animate({ "margin-left": "-15%" }, "200");          ///表格
+            $(thisDelete).animate({ "margin-left": "75%" }, "200");        ///刪除鈕
+            $(thisFirstButton).animate({ "margin-left": "75%" }, "200");   ///上移鈕
+            $(thisThirdButton).animate({ "margin-left": "75%" }, "200");   ///加時鈕
+            $(thisSecondButton).animate({ "margin-left": "87.5%" }, "200"); ///下移鈕
+            $(thisFourthButton).animate({ "margin-left": "87.5%" }, "200"); ///減時鈕
+        }
+        function clickActivity() {
+            $(".editIconLeft").click(function () {     ///編輯左滑
+                var getThisClass = "." + this.className.split(' ')[3];
+                edit_move(getThisClass);
+            })
+            $(".editMoveLeft0").click(function () {    ///編輯刪除
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = (num + 1) ; t < Number(localStorage.getItem("scheduleQuantity")) ; t++) {
+                    if ($(".editIconLeft").hasClass((getThisClass.substring(1, 15) + t))) {
+                        var getMargin = Number(($(getThisClass.substring(0, 15) + t).css("margin-top")).slice(0, -2));
+                        console.log("getMargin: " + getMargin);
+                        $(getThisClass.substring(0, 15) + t).css("margin-top", (getMargin - tableHeight) + "px");
+                    }
+                }
+                scheduleQuantity -= 1;
+                $(getTable).remove();
+                $(getHr).remove();
+                $(getSpan).remove();
+                $(getFirstBut).remove();
+                $(getSecondBut).remove();
+                $(getDeleteBut).remove();
+                $(getThirdBut).remove();
+                $(getFourthBut).remove();
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft1").click(function () {    ///編輯上移
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = num; t > 0; t--) {
+                    var previous = getThisClass.substring(1, 15) + (t - 1);
+                    if ($("table").hasClass(previous + "Table")) {
+                        console.log("aa");
+                        var previousTable = "." + previous + "Table";
+                        var previousSpan = "." + previous;
+                        var previousHr = "." + previous + "Hr";
+                        var previousDelete = "." + previous + "Delete";
+                        var previousFirst = "." + previous + "First";
+                        var previousSecond = "." + previous + "Second";
+                        var previousThird = "." + previous + "Third";
+                        var previousFourth = "." + previous + "Fourth";
+
+                        var newOffsetTop = Number($(previousTable).offset().top);
+                        var newSpanTop = Number($(previousTable).offset().top) + (tableHeight / 2) - 10;
+                        var newHrTop = (Number($(previousTable).offset().top) + tableHeight) * 0.997;
+                        var newDeleteTop = Number($(getDeleteBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+                        var newFisrtRow = Number($(getFirstBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSecondRow = Number($(getThirdBut).offset().top) - Number(($(previousTable).css("height")).slice(0, -2));
+
+                        var previousNewTop = newOffsetTop + tableHeight;
+                        var previousSpanTop = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) / 2 - 10;
+                        var previousHrTop = (newOffsetTop + tableHeight + Number(($(previousTable).css("height")).slice(0, -2))) * 0.997;
+                        var previousDeleteTop = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) / 3;
+                        var previousFirstRow = newOffsetTop + tableHeight;
+                        var previousSecondRow = newOffsetTop + tableHeight + (Number(($(previousTable).css("height")).slice(0, -2))) * 2 / 3;
+
+                        var $table = $(this).closest(".spotTable");
+                        $table.fadeIn();
+                        $table.prev().before($table);
+
+                        $(getSpan).offset({ top: newSpanTop });
+                        $(previousSpan).offset({ top: previousSpanTop });
+
+                        ///   class互換   ///
+                        $(getTable).removeClass(getTable.substring(1, 22)).addClass("changeClass1");
+                        $(previousTable).removeClass(previousTable.substring(1, 22)).addClass("changeClass2");
+                        $(".changeClass1").removeClass("changeClass1").addClass(previousTable.substring(1, 22));
+                        $(".changeClass2").removeClass("changeClass2").addClass(getTable.substring(1, 22));
+
+                        $(getSpan).removeClass(getSpan.substring(1, 17)).addClass("changeSpanClass1");
+                        $(previousSpan).removeClass(previousSpan.substring(1, 17)).addClass("changeSpanClass2");
+                        $(".changeSpanClass1").removeClass("changeSpanClass1").addClass(previousSpan.substring(1, 17));
+                        $(".changeSpanClass2").removeClass("changeSpanClass2").addClass(getSpan.substring(1, 17));
+
+                        $(getHr).removeClass(getHr.substring(1, 19)).addClass("changeHrClass1");
+                        $(previousHr).removeClass(previousHr.substring(1, 19)).addClass("changeHrClass2");
+                        $(".changeHrClass1").removeClass("changeHrClass1").addClass(previousHr.substring(1, 19));
+                        $(".changeHrClass2").removeClass("changeHrClass2").addClass(getHr.substring(1, 19));
+
+                        $(getDeleteBut).removeClass(getDeleteBut.substring(1, 23)).addClass("changeDeleteClass1");
+                        $(previousDelete).removeClass(previousDelete.substring(1, 23)).addClass("changeDeleteClass2");
+                        $(".changeDeleteClass1").removeClass("changeDeleteClass1").addClass(previousDelete.substring(1, 23));
+                        $(".changeDeleteClass2").removeClass("changeDeleteClass2").addClass(getDeleteBut.substring(1, 23));
+
+                        $(getFirstBut).removeClass(getFirstBut.substring(1, 22)).addClass("changeFirstClass1");
+                        $(previousFirst).removeClass(previousFirst.substring(1, 22)).addClass("changeFirstClass2");
+                        $(".changeFirstClass1").removeClass("changeFirstClass1").addClass(previousFirst.substring(1, 22));
+                        $(".changeFirstClass2").removeClass("changeFirstClass2").addClass(getFirstBut.substring(1, 22));
+
+                        $(getSecondBut).removeClass(getSecondBut.substring(1, 23)).addClass("changeSecondClass1");
+                        $(previousSecond).removeClass(previousSecond.substring(1, 23)).addClass("changeSecondClass2");
+                        $(".changeSecondClass1").removeClass("changeSecondClass1").addClass(previousSecond.substring(1, 23));
+                        $(".changeSecondClass2").removeClass("changeSecondClass2").addClass(getSecondBut.substring(1, 23));
+
+                        $(getThirdBut).removeClass(getThirdBut.substring(1, 22)).addClass("changeThirdClass1");
+                        $(previousThird).removeClass(previousThird.substring(1, 22)).addClass("changeThirdClass2");
+                        $(".changeThirdClass1").removeClass("changeThirdClass1").addClass(previousThird.substring(1, 22));
+                        $(".changeThirdClass2").removeClass("changeThirdClass2").addClass(getThirdBut.substring(1, 22));
+
+                        $(getFourthBut).removeClass(getFourthBut.substring(1, 23)).addClass("changeFourthClass1");
+                        $(previousFourth).removeClass(previousFourth.substring(1, 23)).addClass("changeFourthClass2");
+                        $(".changeFourthClass1").removeClass("changeFourthClass1").addClass(previousFourth.substring(1, 23));
+                        $(".changeFourthClass2").removeClass("changeFourthClass2").addClass(getFourthBut.substring(1, 23));
+
+                        break;
+                    }
+                }
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft2").click(function () {    ///編輯下移
+                var getThisClass = "." + this.className.split(' ')[3];
+
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+
+                for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                    var previous = getThisClass.substring(1, 15) + (t + 1);
+
+                    if ($("table").hasClass(previous + "Table")) {
+                        var previousTable = "." + previous + "Table";
+                        var previousSpan = "." + previous;
+                        var previousHr = "." + previous + "Hr";
+                        var previousDelete = "." + previous + "Delete";
+                        var previousFirst = "." + previous + "First";
+                        var previousSecond = "." + previous + "Second";
+                        var previousThird = "." + previous + "Third";
+                        var previousFourth = "." + previous + "Fourth";
+
+                        var previousNewTop = Number($(getTable).offset().top);
+                        var previousSpanTop = Number($(getTable).offset().top) + (Number(($(previousTable).css("height")).slice(0, -2))) / 2 - 10;
+                        var previousHrTop = (Number($(getTable).offset().top) + Number(($(previousTable).css("height")).slice(0, -2))) * 0.997;
+                        var previousDeleteTop = Number($(previousTable).offset().top) - tableHeight + Number(($(previousTable).css("height")).slice(0, -2)) / 3;
+                        var previousFirstRow = Number($(previousTable).offset().top) - tableHeight;
+                        var previousSecondRow = Number($(previousTable).offset().top) - tableHeight + Number(($(previousTable).css("height")).slice(0, -2)) * 2 / 3;
+                        var newOffsetTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSpanTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight / 2 - 10;
+                        var newHrTop = (previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight) * 0.997;
+                        var newDeleteTop = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight / 3;
+                        var newFisrtRow = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2));
+                        var newSecondRow = previousNewTop + Number(($(previousTable).css("height")).slice(0, -2)) + tableHeight * 2 / 3;
+
+
+                        var $table = $(this).closest(".spotTable");
+                        console.log("down");
+                        $table.fadeIn();
+                        $table.next().after($table);
+
+
+                        $(getSpan).offset({ top: newSpanTop });
+                        $(previousSpan).offset({ top: previousSpanTop });
+
+                        ///   class互換   ///
+                        $(getTable).removeClass(getTable.substring(1, 22)).addClass("changeClass1");
+                        $(previousTable).removeClass(previousTable.substring(1, 22)).addClass("changeClass2");
+                        $(".changeClass1").removeClass("changeClass1").addClass(previousTable.substring(1, 22));
+                        $(".changeClass2").removeClass("changeClass2").addClass(getTable.substring(1, 22));
+
+                        $(getSpan).removeClass(getSpan.substring(1, 17)).addClass("changeSpanClass1");
+                        $(previousSpan).removeClass(previousSpan.substring(1, 17)).addClass("changeSpanClass2");
+                        $(".changeSpanClass1").removeClass("changeSpanClass1").addClass(previousSpan.substring(1, 17));
+                        $(".changeSpanClass2").removeClass("changeSpanClass2").addClass(getSpan.substring(1, 17));
+
+                        $(getHr).removeClass(getHr.substring(1, 19)).addClass("changeHrClass1");
+                        $(previousHr).removeClass(previousHr.substring(1, 19)).addClass("changeHrClass2");
+                        $(".changeHrClass1").removeClass("changeHrClass1").addClass(previousHr.substring(1, 19));
+                        $(".changeHrClass2").removeClass("changeHrClass2").addClass(getHr.substring(1, 19));
+
+                        $(getDeleteBut).removeClass(getDeleteBut.substring(1, 23)).addClass("changeDeleteClass1");
+                        $(previousDelete).removeClass(previousDelete.substring(1, 23)).addClass("changeDeleteClass2");
+                        $(".changeDeleteClass1").removeClass("changeDeleteClass1").addClass(previousDelete.substring(1, 23));
+                        $(".changeDeleteClass2").removeClass("changeDeleteClass2").addClass(getDeleteBut.substring(1, 23));
+
+                        $(getFirstBut).removeClass(getFirstBut.substring(1, 22)).addClass("changeFirstClass1");
+                        $(previousFirst).removeClass(previousFirst.substring(1, 22)).addClass("changeFirstClass2");
+                        $(".changeFirstClass1").removeClass("changeFirstClass1").addClass(previousFirst.substring(1, 22));
+                        $(".changeFirstClass2").removeClass("changeFirstClass2").addClass(getFirstBut.substring(1, 22));
+
+                        $(getSecondBut).removeClass(getSecondBut.substring(1, 23)).addClass("changeSecondClass1");
+                        $(previousSecond).removeClass(previousSecond.substring(1, 23)).addClass("changeSecondClass2");
+                        $(".changeSecondClass1").removeClass("changeSecondClass1").addClass(previousSecond.substring(1, 23));
+                        $(".changeSecondClass2").removeClass("changeSecondClass2").addClass(getSecondBut.substring(1, 23));
+
+                        $(getThirdBut).removeClass(getThirdBut.substring(1, 22)).addClass("changeThirdClass1");
+                        $(previousThird).removeClass(previousThird.substring(1, 22)).addClass("changeThirdClass2");
+                        $(".changeThirdClass1").removeClass("changeThirdClass1").addClass(previousThird.substring(1, 22));
+                        $(".changeThirdClass2").removeClass("changeThirdClass2").addClass(getThirdBut.substring(1, 22));
+
+                        $(getFourthBut).removeClass(getFourthBut.substring(1, 23)).addClass("changeFourthClass1");
+                        $(previousFourth).removeClass(previousFourth.substring(1, 23)).addClass("changeFourthClass2");
+                        $(".changeFourthClass1").removeClass("changeFourthClass1").addClass(previousFourth.substring(1, 23));
+                        $(".changeFourthClass2").removeClass("changeFourthClass2").addClass(getFourthBut.substring(1, 23));
+
+                        break;
+                    }
+                }
+                /// 資料庫 ///
+            })
+            $(".editMoveLeft3").click(function () {    ///編輯加時
+                var getThisClass = "." + this.className.split(' ')[3];
+                console.log(getThisClass);
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                var nowRow = Number($(getTable + " .tableRowspan").attr("rowspan"));
+                if (nowRow < 8) {
+                    $(getTable + " .tableRowspan").attr("rowspan", (nowRow + 1));
+                    $(getTable + " tr:last").after("<tr><td><span class='spanLattice' style='display:none;'>new</span></td></tr>");
+                    var newTableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                    var newSpanTop = Number($(getSpan).css("margin-top").slice(0, -2)) + (newTableHeight - tableHeight) / 2;
+                    var newButtonHeight = newTableHeight / 3;
+
+                    var newFirstRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight);
+                    var newDeleteBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight) + newButtonHeight;
+                    var newSecondRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) - (newTableHeight - tableHeight) + newButtonHeight * 2;
+                    var newHrTop = Number($(getTable).offset().top) + newTableHeight;
+                    var newImgTop;
+                    switch ((nowRow + 1)) {
+                        case 1: newImgTop = -10; break;
+                        case 2: newImgTop = -30; break;
+                        case 3: newImgTop = -50; break;
+                        case 4: newImgTop = -70; break;
+                        case 5: newImgTop = -90; break;
+                        case 6: newImgTop = -110; break;
+                        case 7: newImgTop = -130; break;
+                        case 8: newImgTop = -150; break;
+                        default: break;
+                    }
+
+                    $(getSpan).css("margin-top", newSpanTop + "px");
+                    $(getFirstBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getSecondBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getDeleteBut).css({ "height": newButtonHeight + "px", "margin-top": newDeleteBut + "px" });
+                    $(getThirdBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getFourthBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getTable + " .tableRowspan span img").css("margin-top", newImgTop + "%");
+
+                    for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                        var next = getThisClass.substring(1, 15) + (t + 1);
+                        if ($("table").hasClass(next + "Table")) {
+                            var nextSpan = "." + next;
+                            var newTop = Number($(nextSpan).css("margin-top").slice(0, -2));
+                            $(nextSpan).css("margin-top", newTop + newTableHeight - tableHeight + "px")
+                        }
+                    }
+                    /// 資料庫 ///
+                }
+            })
+            $(".editMoveLeft4").click(function () {    ///編輯減時
+                var getThisClass = "." + this.className.split(' ')[3];
+                console.log(getThisClass);
+                var getSpan = getThisClass.substring(0, 16);
+                var getTable = getSpan + "Table";
+                var getHr = getSpan + "Hr";
+                var getFirstBut = getSpan + "First";
+                var getSecondBut = getSpan + "Second";
+                var getDeleteBut = getSpan + "Delete";
+                var getThirdBut = getSpan + "Third";
+                var getFourthBut = getSpan + "Fourth";
+
+                var num = Number(getThisClass.substring(15, 16));
+                var tableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                var nowRow = Number($(getTable + " .tableRowspan").attr("rowspan"));
+                if (nowRow > 1) {
+                    $(getTable + " .tableRowspan").attr("rowspan", (nowRow - 1));
+                    $(getTable + " tr:last").remove();
+                    var newTableHeight = Number(($(getTable).css("height")).slice(0, -2));
+                    var newSpanTop = Number($(getSpan).css("margin-top").slice(0, -2)) - (tableHeight - newTableHeight) / 2;
+                    var newButtonHeight = newTableHeight / 3;
+
+                    var newFirstRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + (tableHeight - newTableHeight);
+                    var newDeleteBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + newTableHeight / 3 + (tableHeight - newTableHeight);
+                    var newSecondRowBut = Number($(getFirstBut).css("margin-top").slice(0, -2)) + newTableHeight * 2 / 3 + (tableHeight - newTableHeight);
+                    var newHrTop = Number($(getTable).offset().top) + newTableHeight;
+                    var newImgTop;
+                    switch ((nowRow - 1)) {
+                        case 1: newImgTop = -10; break;
+                        case 2: newImgTop = -30; break;
+                        case 3: newImgTop = -50; break;
+                        case 4: newImgTop = -70; break;
+                        case 5: newImgTop = -90; break;
+                        case 6: newImgTop = -110; break;
+                        case 7: newImgTop = -130; break;
+                        case 8: newImgTop = -150; break;
+                        default: break;
+                    }
+
+                    $(getSpan).css("margin-top", newSpanTop + "px");
+                    $(getFirstBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getSecondBut).css({ "height": newButtonHeight + "px", "margin-top": newFirstRowBut + "px" });
+                    $(getDeleteBut).css({ "height": newButtonHeight + "px", "margin-top": newDeleteBut + "px" });
+                    $(getThirdBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getFourthBut).css({ "height": newButtonHeight + "px", "margin-top": newSecondRowBut + "px" });
+                    $(getTable + " .tableRowspan span img").css("margin-top", newImgTop + "%");
+
+                    for (var t = num; t < Number(localStorage.getItem("scheduleQuantity")) - 1; t++) {
+                        var next = getThisClass.substring(1, 15) + (t + 1);
+                        if ($("table").hasClass(next + "Table")) {
+                            var nextSpan = "." + next;
+                            var newTop = Number($(nextSpan).css("margin-top").slice(0, -2));
+                            $(nextSpan).css("margin-top", newTop - (tableHeight - newTableHeight) + "px");
+                        }
+                    }
+                    /// 資料庫 ///
+                }
+            })
+        }
+    </script>
+    <style>
+        html, body {
+            font-family: none;
+            overflow-x: hidden;
+        }
+
+        body {
+            padding-top: 70px;
+            padding-bottom: 70px;
+            background-color: #eee;
+            overflow-y: hidden;
+        }
+
+        .navbar {
+            min-height: 45px;
+        }
+
+        .navbar-default {
+            background-image: linear-gradient(to bottom,#edf5cd 0,#909480 100%);
+            border-color: #909480;
+            background-color: #dff0d8;
+        }
+
+        .navbar-inverse {
+            background-image: -webkit-linear-gradient(top,#003377 0,#003377 100%);
+            top: 45px;
+            border-color: #080808;
+        }
+
+            .navbar-inverse .navbar-brand {
+                color: #f5f5f5;
+                font-weight: bold;
+                text-shadow: 2px 2px 1px #1e1e1e;
+                white-space: nowrap;
+            }
+
+        .navbar-brand {
+            height: 40px;
+            line-height: 10px;
+            padding: 15px 140px;
+            font-size: 19px;
+        }
+
+        .navbar-default .navbar-text, .navbar-inverse .navbar-text {
+            color: #1e1e1e;
+            font-weight: bold;
+            margin: -38px 0 0 120px;
+            font-size: 20px;
+            text-shadow: 2px 2px 15px #333;
+        }
+
+        .navbar-btn {
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 6px 8px;
+            margin-top: 5px;
+            margin-left: 3px;
+        }
+
+        .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+            background-color: #003377;
+            border: none;
+        }
+
+        .nav-tabs > li > a {
+            border-radius: 0 0 0 0;
+        }
+
+        ul li {
+            list-style-type: none;
+        }
+
+        .btn-primary {
+            background-image: none;
+            background-color: #003377;
+            border-style: none;
+            box-shadow: none;
+        }
+
+        .close {
+            color: #dff0d8;
+        }
+
+        .nav-tabs > li > a {
+            margin-right: 0;
+        }
+
+        .nav:after {
+            clear: none;
+        }
+
+        .nav-tabs > li {
+            margin-bottom: -0.5%;
+        }
+        /*------ -------------------------------------------------- 標題固定列----------------------------------------------------*/
+        #nameTitle {
+            border-radius: 0;
+            width: 100%;
+            min-height: 7.2vh;
+            margin-top: 0;
+            margin-left: 0;
+            margin-bottom: 0;
+            font-size: 20px;
+            line-height: 1.6;
+            font-weight: bold;
+            text-shadow: 3px 3px 2px #000000;
+            position: relative;
+            color: #eee;
+            text-align: center;
+            padding-top: 2%;
+            padding-bottom: 2%;
+            white-space: nowrap;
+        }
+        /*------------------------------------------------------- 時間軸CS ------------------------------------------------------*/
+        #timeline {
+            width: 100%;
+            position: absolute;
+            z-index: 2;
+            top: 0px;
+            border: solid;
+            border-color: #ff0000;
+            border-width: thin;
+        }
+
+        #blockimg {
+            width: 100%;
+            height: 0px;
+            position: absolute;
+            z-index: 2;
+            opacity: 0.5;
+        }
+        /*---------------------------------------------------- 我的行程內容 ------------------------------------------------------*/
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        tr > td {
+            border-color: #8e9399;
+            border-style: solid;
+            border-width: 1px;
+            width: 10%;
+            text-align: center;
+            background-color: #8e9399;
+            height: 10vh;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        td + td {
+            border-color: #ffffff;
+            width: 90%;
+            text-align: center;
+            background-color: #d1c8b3;
+        }
+
+        td > img {
+            opacity: 0.7;
+        }
+
+        .moveTime {
+            font-size: 16px;
+            position: relative;
+            right: -35%;
+            top: 20%;
+        }
+        /*---------------------------------------------------- 編輯行程 ------------------------------------------------------*/
+        .editIconLeft {
+            position: absolute;
+            margin-left: 1.5%;
+            font-size: x-large;
+            color: brown;
+            display: none;
+        }
+
+        .editHr {
+            position: absolute;
+            border: 0;
+            border-top: dashed #a94442;
+            display: none;
+            width: -webkit-fill-available;
+            margin-top: -0.5%;
+            z-index: 10;
+        }
+
+        .editSpan {
+            font-size: x-large;
+            margin-left: -0.7vw;
+        }
+
+        .editMoveLeft0 {
+            position: absolute;
+            margin-left: 100%;
+            width: 25.5%;
+            border-radius: 0;
+            font-size: large;
+            font-family: 'cwTeXYen', sans-serif;
+            padding-top: 10px;
+            padding-left: 5px;
+        }
+
+        .editMoveLeft1, .editMoveLeft3 {
+            position: absolute;
+            margin-left: 100%;
+            width: 12.75%;
+            border-radius: 0;
+            background-image: none;
+            background-color: beige;
+        }
+
+        .editMoveLeft2, .editMoveLeft4 {
+            position: absolute;
+            margin-left: 110.25%;
+            width: 12.75%;
+            border-radius: 0;
+            background-image: none;
+            background-color: beige;
+        }
+    </style>
+</head>
+
+<body>
+    <!------ -------------------------------------------------- 上方固定列----------------------------------------------------->
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation" id="weatherTourTitle">
+        <div class="container-fluid">
+            <div class="navbar-header" >
+                <button class="btn navbar-default navbar-btn menuClick" onclick="clickMenu()"><span class="glyphicon glyphicon-align-justify menuClick" aria-hidden="true" style="color:#565050"></span></button>
+                <p class="navbar-text">Weather Tour</p>
+            </div>
+        </div>
+    </nav>
+
+    <nav class="navbar-inverse navbar-fixed-top" role="navigation" id="settingTitle">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <div id="nameTitle">
+                    <nobr id="scheduleTitle" style="text-align:center;">我的行程</nobr>
+                    <button type="button" class="btn btn-default" aria-label="Left Align" style="position:absolute;margin-left:-60%;border-radius:20px;margin-top:0;" data-toggle="modal" data-target="#deleteModal">
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true" style="top:3px"></span>
+                    </button>
+                    <button type="button" class="btn btn-default" aria-label="Left Align" style="position:absolute;margin-left:-50%;border-radius:20px;margin-top:0;" data-toggle="modal" data-target="#myModal">
+                        <span class="glyphicon glyphicon-share" aria-hidden="true" style="top:3px"></span>
+                    </button>
+                    <button id="editButton" type="button" class="btn btn-default" aria-label="Left Align" style="position:absolute;margin-left:29%;border-radius:20px;margin-top:0;" data-toggle="modal">
+                        <span id="editSpan" class="glyphicon glyphicon-pencil" aria-hidden="true" style="top:3px"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!----------------------------------------------------------- 選單 -------------------------------------------------------->
+    <div id="menu" style="background-color:#909480;position:fixed;width:75%;height:95%;top:0%; overflow-y: hidden; left:-75%;">
+        <img src="images/manuimage.jpg" style="height:25vh;width:100%;" class="menuClick" />
+        <nav style="height:68.5%" class="menuClick">
+            <ul class="menuClick">
+                <li class="ui-content" style="line-height: 80%;padding-left:23%;font-size: 18px; ">
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <a href="tourbasket.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">旅遊籃</a><a href="tourbasket.html"><span class="glyphicon glyphicon-shopping-cart" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="schedule.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">我的行程</a><a href="schedule.html"><span class="glyphicon glyphicon-calendar" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-left:22%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="share.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">行程庫</a><a href="share.html"><span class="glyphicon glyphicon-list-alt" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="direction.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">使用說明</a><a href="direction.html"><span class="glyphicon glyphicon-info-sign" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="about.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">關於我們</a><a href="about.html"><span class="glyphicon glyphicon-user" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+            </ul>
+        </nav>
+        <img src="images/logo.png" style="width:20%;position:absolute;top:85%;left:75%;" class="menuClick" />
+    </div>
+    <img id="menuBlock" src="images/scheduleBlock.jpg" style="position:absolute;z-index:80;margin-left:75%;height:95%;margin-top:-20%;opacity: 0.5;display:none;">
+    <!------------------------------------------------------ 刪除Model -------------------------------------------------------->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="margin-top:50%;z-index:9999;">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color:darksalmon;">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel" style="font-weight:bold;">注意!!</h4>
+                </div>
+                <div class="modal-body">
+                    <nobr style="font-weight:bold;font-size:18px;margin-left:18%;">確定要清空行程內容嗎?</nobr>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" style="font-weight:bold;">取消</button>
+                    <button id="deleteButton" type="button" class="btn btn-primary" style="font-weight:bold;">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!------------------------------------------------------ 命名Model -------------------------------------------------------->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="margin-top:40%;z-index:9999;">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color:darksalmon;">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel" style="font-weight:bold;">為行程取個名字吧</h4>
+                </div>
+                <div class="modal-body">
+                    <input id="encloseName" type="text" maxlength="5" style="width:100%;height:40px;font-size:22px;font-weight:bold;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" style="font-weight:bold;">取消</button>
+                    <button id="encloseButton" type="button" class="btn btn-primary" style="font-weight:bold;">送出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!------------------------------------------------------ 我的行程內容 ------------------------------------------------------>
+
+    <div style="position:relative;margin-top:6%; background-color:#eee;" id="scheduleInput">
+        <div id="timeline"></div>
+        <img id="blockimg" src="images/scheduleBlock.jpg">
+        <div id="scheduleContent">
+		
+		</div>
+
+    </div>
+
+    <!-------------------------------------------------------- 下方固定列 ----------------------------------------------------->
+    <nav class="navbar-fixed-bottom" role="navigation" style="z-index:100;">
+        <div class="container-fluid">
+
+            <ul class="nav nav-tabs" style="width:110%">
+                <li class="active" style="width:50%;left:-4%;border-right-style:solid;border-right-color:#edf5cd"><a href="index.html" style="padding-left:35%;"><img src="images/home.png" style="width:50%" /></a></li>
+                <li style="width:50%;right:4%;bottom:-5%;"><a href="lottery.html" style="border:none;padding-left:35%;background-color:#003377;"><img src="images/lottery.png" style="width:50%;" /></a></li>
+            </ul>
+
+        </div>
+    </nav>
+    <script type="text/javascript" src="scripts/index.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,653 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="yes">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, width=device-width">
+
+
+    <link rel="stylesheet" href="css/bootstrap.min_3.3.7.css">
+    <link rel="stylesheet" href="css/bootstrap-theme.min_3.3.7.css">
+    <link rel="stylesheet" href="css/pikaday.css">
+    <link rel="stylesheet" href="css/component.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.8.0/css/bootstrap-slider.css">
+    <link href='https://fonts.googleapis.com/earlyaccess/cwtexyen.css' rel='stylesheet' type='text/css'>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/modernizr.custom.js"></script>
+    <script src="scripts/lottery_ajax.js"></script>
+    <script src="scripts/breakdown_ajax.js"></script>
+    <script>
+        var nowDate = new Date();
+        var num;
+        $(function () {
+           
+            $("#notLike").css("display", "none");
+            $("#Like").css("display", "none");
+            $(".lottery_content_move").html("<img id='loadingImg' src='images/loading.gif'><p id ='initialText'>Loading</p>");
+            if (localStorage.getItem("spotQuantity"))
+                num = localStorage.getItem("spotQuantity");
+            else
+                num = 0;
+            hammer();
+/*--------------------------------------------------- 選單收回function--------------------------------------------------------*/
+            $("body").click(function (e) {
+                if ($(e.target).hasClass('ui-content') || $(e.target).hasClass('menuClick')) {
+                    console.log("aa");
+                }
+                else {
+                    $("#menu").animate({ left: '-75%' }, "200");
+                    $("#weatherTourTitle").animate({ left: '0' }, "200");
+                    $("#settingTitle").animate({ left: '0' }, "200");
+                    $(".lottery_content_move").animate({ left: '0' }, "200");
+                    $("#settingbutton").animate({ left: '0' }, "200");
+                    $("body").css("overflow-y", "auto");
+                    $("#menuBlock").css("display", "none");
+                    menustate = 0;
+                }
+            })
+        });
+/*------------------------------------------------------ 選單JS ----------------------------------------------------------*/
+            var menustate = 0;
+            function clickMenu() {
+                if (menustate == 0) {
+                    $("#menu").animate({ left: '0' }, "200", function () { menustate = 1; $("#menuBlock").css("display", "block"); });
+                    $("#weatherTourTitle").animate({ left: '75%' }, "200");
+                    $("#settingTitle").animate({ left: '75%' }, "200");
+                    $(".lottery_content_move").animate({ left: '75%' }, "200");
+                    $("#settingbutton").animate({ left: '100%' }, "200");
+                    $("body").css("overflow-y", "hidden");
+                }
+                else {
+                    $("#menu").animate({ left: '-75%' }, "200");
+                    $("#weatherTourTitle").animate({ left: '0' }, "200");
+                    $("#settingTitle").animate({ left: '0' }, "200");
+                    $(".lottery_content_move").animate({ left: '0' }, "200");
+                    $("#settingbutton").animate({ left: '0' }, "200");
+                    $("body").css("overflow-y", "auto");
+                    $("#menuBlock").css("display", "none");
+                    menustate = 0;
+                }
+            }
+           
+    </script>
+    <style>
+        html, body {
+            font-family: none;
+        }
+
+        body {
+            padding-top: 70px;
+            padding-bottom: 70px;
+            overflow-y: hidden;
+            overflow-x: hidden;
+            background-color:black;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: 0 80%;
+            background-size: 100% 83%;
+            height:100vh;
+        }
+
+        #settingbutton {
+            border-radius: 0;
+            width: 100%;
+            margin-top: 0;
+            margin-left: 0;
+            margin-bottom: 0.5%;
+            font-size: 18px;
+            line-height: 2.2;
+            font-weight: bold;
+            text-shadow: 3px 3px 2px #000000;
+            position: relative;
+        }
+
+        .navbar {
+            min-height: 45px;
+        }
+
+        .navbar-default {
+            background-image: linear-gradient(to bottom,#edf5cd 0,#909480 100%);
+            border-color: #909480;
+            background-color: #dff0d8;
+        }
+
+        .navbar-inverse {
+            background-image: -webkit-linear-gradient(top,#003377 0,#003377 100%);
+            top: 45px;
+            border-color: #080808;
+        }
+
+            .navbar-inverse .navbar-brand {
+                color: #f5f5f5;
+                font-weight: bold;
+                text-shadow: 2px 2px 1px #1e1e1e;
+                white-space: nowrap;
+            }
+
+        .navbar-brand {
+            height: 40px;
+            line-height: 10px;
+            padding: 15px 140px;
+            font-size: 19px;
+        }
+
+        .navbar-default .navbar-text, .navbar-inverse .navbar-text {
+            color: #1e1e1e;
+            font-weight: bold;
+            margin: -38px 0 0 120px;
+            font-size: 20px;
+            text-shadow: 2px 2px 15px #333;
+        }
+
+        .navbar-btn {
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 6px 8px;
+            margin-top: 5px;
+            margin-left: 3px;
+        }
+
+        .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+            background-color: #003377;
+            border: none;
+        }
+
+        .nav-tabs > li > a {
+            border-radius: 0 0 0 0;
+        }
+
+        ul li {
+            list-style-type: none;
+        }
+
+        .btn-primary {
+            background-image: none;
+            background-color: #003377;
+            border-style: hidden;
+            box-shadow: none;
+        }
+
+        .close {
+            color: #dff0d8;
+        }
+
+        .inputwidth {
+            width: 100%;
+            height: 6vh;
+            font-weight: bold;
+            color: #000000;
+            padding-left: 3vh;
+            background-color: #b3c2ca;
+        }
+
+        .nav-tabs > li > a {
+            margin-right: 0;
+        }
+
+        .nav:after {
+            clear: none;
+        }
+
+        .nav-tabs > li {
+            margin-bottom: -0.5%;
+        }
+
+        .form-group {
+            margin-bottom: 8px;
+        }
+
+        .modal-dialog {
+            margin: 30px;
+            z-index:9999;
+            margin-top:-20px;
+        }
+        #loadingImg {
+            width:120%;
+            height:100%;
+            margin-top:20%;
+            margin-left:-10%;
+        }
+        #initialText {
+            position:absolute;
+            color:cornsilk;
+            top:52%;
+            left:36%;
+            font-size:xx-large;
+        }
+/*-------------------------------------------------------- 拉霸CS --------------------------------------------------------*/
+        #slider12a .slider-track-high, #slider12c .slider-track-high {
+            background: #a94442;
+        }
+
+        .slider.slider-horizontal {
+            width: 90%;
+            height: 5%;
+            margin-left: 5%;
+            margin-top: -1%;
+        }
+
+        .slider {
+            vertical-align: baseline;
+        }
+
+        .slider.slider-horizontal .slider-track {
+            margin-top: -3%;
+         }
+
+        .slider-handle {
+            margin-top: -4.5%;
+        }
+
+        .slider .tooltip.top {
+            margin-top: -13%;
+        }
+        /*-------------------------------------------------------- 景點CS --------------------------------------------------------*/
+        .lottery_spot_div {
+            position: relative;
+            margin-top: 15%;
+        }
+
+        .lottery_weather_image {
+            position: absolute;
+            z-index: 2;
+            width: 20%;
+            height: auto;
+        }
+
+        .lottery_spot_name {
+            color: #fab75e;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            left: 11.5%;
+            top: 64%;
+            border-style: outset;
+            border-color: #7d7d7d;
+            background-color: #1e1e1e;
+        }
+        .lottery_area_name {
+            color: #d9edf7;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            left: 11.5%;
+            top: 81%;
+            border-style: outset;
+            border-color: #7d7d7d;
+            background-color: #2e2d2d;
+        }
+        .lottery_transportation_image {
+            position: absolute;
+            z-index: 4;
+            left: 10%;
+            top: 77%;
+            width: 36%;
+        }
+        .lottery_transportation_image_scooter {
+            left: 20%;
+            top: 79%;
+            width: 15%;
+        }
+        .lottery_transportation_image_walk {
+            left: 22%;
+            top: 82%;
+            width: 11%;
+        }
+        .lottery_arrive_time {
+            color: #fab75e;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            right: 13%;
+            top: 76%;
+            text-shadow: 3px 3px 3px #000000;
+        }
+
+        .lottery_arrive_distance {
+            color: #fab75e;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            right: 13%;
+            top: 86%;
+            text-shadow: 3px 3px 3px #000000;
+        }
+
+        .lottery_spot_image {
+            border-style: ridge;
+            border-width: thick;
+            border-color: gray;
+            width: 80%;
+            height: 38vh;
+        }
+
+        .active_image {
+            width: 10%;
+            position: absolute;
+            left: 45%;
+            top: 5%;
+        }
+/*------------------------------------------------------ 景點類型CS ------------------------------------------------------*/
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 12px;
+            line-height: 1.428571429;
+            border-radius: 15px;
+            border-color: burlywood;
+        }
+
+        .btn .badge {
+            top: 0;
+            margin-left: 5%;
+        }
+
+        .badge {
+            display: inline;
+            padding: 7px 5px;
+            background-color: #89a37e;
+        }
+
+        .btn-primary .badge {
+            background-color: #8aa57f;
+        }
+
+        .spot_type_icon {
+            width: 28%;
+        }
+
+        .spot_type_box {
+            background-color: #003377;
+            left: 45%;
+            top: 10%;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 15px;
+            color: #9cef78;
+            text-shadow: 3px 3px 2px #000000;
+            padding-top: 15%;
+            box-sizing: content-box;
+            height: 60%;
+            width: 125%;
+        }
+
+        .spot_type_content {
+            top: 15%;
+            left: -30%;
+            font-weight: bold;
+            font-size: 15px;
+            color: #fcf8e3;
+            text-shadow: 3px 3px 2px #000000;
+            line-height: 200%;
+            height: 90%;
+            width: 120%;
+            overflow: inherit;
+        }
+
+        .spot_type_content_color {
+            color: #cdcdd4;
+            position: absolute;
+            padding-left: 2%;
+        }
+
+        .spot_type_content_namecolor {
+            color: #fbcac8;
+        }
+        .lottery_spot_ID {
+            display:none;
+        }
+        .bl-main {
+            height: 235px;
+            width: 280px;
+            margin-left: 11%;
+            margin-top: 1%;
+        }
+    </style>
+</head>
+
+<body>
+    <!------ -------------------------------------------------- 上方固定列----------------------------------------------------->
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation" id="weatherTourTitle" style="z-index:80;">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button class="btn navbar-default navbar-btn menuClick" onclick="clickMenu()"><span class="glyphicon glyphicon-align-justify menuClick" aria-hidden="true" style="color:#565050"></span></button>
+                <p class="navbar-text">Weather Tour</p>
+            </div>
+        </div>
+    </nav>
+    <nav class="navbar-inverse navbar-fixed-top" role="navigation" id="settingTitle" style="z-index:80;">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button id="settingbutton" type="button" class="btn btn-primary navbar-btn" data-toggle="modal" data-target="#setting">偏好設定</button>
+            </div>
+        </div>
+    </nav>
+    <!----------------------------------------------------------- 選單 -------------------------------------------------------->
+    <div id="menu" style="background-color:#909480;position:fixed;width:75%;height:95%;top:0%; overflow-y: hidden; left:-75%;">
+        <img src="images/manuimage.jpg" style="height:25vh;width:100%;" class="menuClick" />
+        <nav style="height:68.5%" class="menuClick">
+            <ul class="menuClick">
+                <li class="ui-content" style="line-height: 80%;padding-left:23%;font-size: 18px; ">
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <a href="tourbasket.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">旅遊籃</a><a href="tourbasket.html"><span class="glyphicon glyphicon-shopping-cart" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="schedule.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">我的行程</a><a href="schedule.html"><span class="glyphicon glyphicon-calendar" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-left:22%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="share.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">行程庫</a><a href="share.html"><span class="glyphicon glyphicon-list-alt" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="direction.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">使用說明</a><a href="direction.html"><span class="glyphicon glyphicon-info-sign" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="about.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">關於我們</a><a href="about.html"><span class="glyphicon glyphicon-user" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+            </ul>
+        </nav>
+        <img src="images/logo.png" style="width:20%;position:absolute;top:85%;left:75%;" class="menuClick" />
+    </div>
+    <img id="menuBlock" src="images/scheduleBlock.jpg" style="position:absolute;z-index:90;margin-left:75%;height:95%;margin-top:-20%;opacity: 0.5;display:none;">
+    <!-------------------------------------------------------- 偏好設定 ------------------------------------------------------->
+
+    <div class="modal fade" id="setting" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="top:6.5vh;z-index:300">
+            <div class="modal-content" style="background-color: #355a79;color:#fcf8e3;margin-top:12%;">
+                <div class="modal-header" style="padding:10px;">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <center><h4 class="modal-title" id="myModalLabel" style="font-weight:bold;text-shadow: 3px 3px 2px #000000;">請設定以下偏好</h4></center>
+                </div>
+                <form class="form-horizontal" role="form">
+                    <div class="form-group">
+                        <label style="margin-left:2%;margin-top:3%;" for="inputEmail3" class="col-sm-2 control-label">日期:</label>
+                        <div class="col-sm-10">
+                            <input class="inputwidth" type="text" id="datepicker_home" name="datepicker" value="">
+<!--------------------------------------------------------- 日期JS -------------------------------------------------------->
+                            <script src="http://momentjs.com/downloads/moment-with-locales.js"></script>
+                            <script src="scripts/pikaday.js"></script>
+                            <script>
+                                    var min = new Date();
+                                    var max = new Date();
+                                    max.setDate(min.getDate() + 2);
+                                    new Pikaday({
+                                        field: document.getElementById('datepicker_home'),
+                                        format: 'YYYY-MM-DD',
+                                        minDate: min,
+                                        maxDate: max,
+                                    });
+                            </script>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;margin-top:-2%" class="col-sm-2 control-label">時間:</label>
+                        <div class="col-sm-10">
+                            <select name="time" id="time_home" class="inputwidth form-control">
+                                <option value=""></option>
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">交通:</label>
+                        <div class="col-sm-10">
+                            <select name="Translate" id="translate_home" class="inputwidth form-control">
+                                <option value="car">汽車</option>
+                                <option value="scooter">摩托車</option>
+                                <option value="walk">步行</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">地區:</label>
+                        <div class="col-sm-10">
+                            <select id="place_home" name="section" class="inputwidth form-control">
+                                <option value="">無</option>
+                                <option value="0">臺北市</option>
+                                <option value="1">基隆市</option>
+                                <option value="2">新北市</option>
+                                <option value="3">宜蘭縣</option>
+                                <option value="4">新竹縣</option>
+                                <option value="5">桃園市</option>
+                                <option value="6">苗栗縣</option>
+                                <option value="7">臺中市</option>
+                                <option value="8">彰化縣</option>
+                                <option value="9">南投縣</option>
+                                <option value="10">嘉義縣</option>
+                                <option value="11">雲林縣</option>
+                                <option value="12">臺南市</option>
+                                <option value="13">高雄市</option>
+                                <option value="14">屏東縣</option>
+                                <option value="15">臺東縣</option>
+                                <option value="16">花蓮縣</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">類型:</label>
+                        <div class="col-sm-10">
+                            <select id="section_home" name="section" class="inputwidth form-control">
+                                <option value="">全部</option>
+                                <option value="0">風景區</option>
+                                <option value="1">觀光工廠</option>
+                                <option value="2">休憩公園</option>
+                                <option value="3">海岸風情</option>
+                                <option value="4">湖岸風情</option>
+                                <option value="5">觀光夜市</option>
+                                <option value="6">森林遊樂區</option>
+                                <option value="7">步道健身</option>
+                                <option value="8">農牧場</option>
+                                <option value="9">名勝古蹟</option>
+                                <option value="10">瀑布</option>
+                                <option value="11">廟宇建築</option>
+                                <option value="12">遊樂園區</option>
+                                <option value="13">博物館</option>
+                                <option value="14">購物中心</option>
+                                <option value="15">活動</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label style="font-weight:bold;margin:0 0 .4em .4em;" for="translate">個人化:</label>
+                    <label style="font-weight:bold;position:absolute;top:83%;left:4%;color:#e08482;">距離</label>
+                    <label style="font-weight:bold;position:absolute;top:83%;right:4%;color:#e08482;">天氣</label>
+                    <br>
+                    <br>
+                    <input id="range" type="text" style="margin-left:5%" value="">
+ <!--------------------------------------------------------- 拉霸JS -------------------------------------------------------->
+
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.8.0/bootstrap-slider.min.js"></script>
+                    <script>
+                            $("#range").slider({ id: "slider12a", min: 0, max: 10, value: 5 });
+                    </script>
+                    <hr style="margin-top:4%">
+                    <div class="form-group" style="margin-top:-7%;">
+                        <div class="col-sm-offset-2 col-sm-10">
+                            <button id="lottery_submit" class="btn btn-default" style="font-weight:900;width:100%;margin:0 0 -5% 0;height:7vh;border:none;border-top-left-radius: 0px;border-top-right-radius: 0px;background-image:none;background-color:#e8e8e8;text-shadow:none;font-size:18px;font-family:Microsoft JhengHei" type="button">送出</button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+    <!------------------------------------------------------ 景點內容 --------------------------------------------------------->
+    <div id="lottery_contenr">
+
+        <center>
+            <div class="lottery_spot_div lottery_content_move">
+                
+            </div>
+            <img id="notLike" class="lottery_content_move" src="images/notlike.png" style="width:35%;height:auto;position:relative;padding-right:7%;padding-top: 10%;">
+            <img id="Like" class="lottery_content_move" src="images/like.png" style="width:35%;height:auto;position:relative;padding-left:7%;padding-top:10%;">
+        </center>
+
+    </div>
+    <a style="display:none" id="breakdown" href="breakdown.html">ppp</a>
+    <!-------------------------------------------------------- 下方固定列 ----------------------------------------------------->
+    <nav class="navbar-fixed-bottom" role="navigation" style="z-index:100;">
+        <div class="container-fluid">
+
+            <ul class="nav nav-tabs" style="width:110%">
+                <li class="active" style="width:50%;left:-4%;"><a href="index.html" style="padding-left:35%;"><img src="images/home.png" style="width:50%" /></a></li>
+                <li style="width:50%;right:4%;bottom:-5%;"><a href="#" style="border:none;padding-left:35%;background-color:#5bc0de;"><img src="images/lottery.png" style="width:50%;" /></a></li>
+            </ul>
+
+        </div>
+    </nav>
+    <script src="scripts/boxlayout.js"></script>
+</body>
+</html>
+
+

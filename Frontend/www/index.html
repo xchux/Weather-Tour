@@ -1,0 +1,757 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="yes">
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, width=device-width">
+    <link rel="stylesheet" href="css/bootstrap.min_3.3.7.css">
+    <link rel="stylesheet" href="css/bootstrap-theme.min_3.3.7.css">
+    <link rel="stylesheet" href="css/pikaday.css">
+    <link rel="stylesheet" href="css/component.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.8.0/css/bootstrap-slider.css">
+    <link href='https://fonts.googleapis.com/earlyaccess/cwtexyen.css' rel='stylesheet' type='text/css'>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/modernizr.custom.js"></script>
+    <script src="scripts/index_ajax.js"></script>
+    <script src="scripts/breakdown_ajax.js"></script>
+    <script>
+ /*---------------------------------------------------- 前端資料庫 --------------------------------------------------------*/
+        var nowDate = new Date();
+        var num; //var latitude; var longitude;
+        var scheduleNum;
+        var thisElement;
+
+        $(function () {
+            inputOptionTime();
+            $("#loadingText").css("display", "none");
+            $("#index_contenr").html("<img id='loadingImg' src='images/loading.gif'><p id ='initialText'>Loading</p>");
+            if (localStorage.getItem("spotQuantity"))
+                num = localStorage.getItem("spotQuantity");
+            else
+                num = 0;
+            if (localStorage.getItem("scheduleQuantity"))
+                scheduleNum = localStorage.getItem("scheduleQuantity");
+            else
+                scheduleNum = 0;
+/*---------------------------------------------------- 選單收回function-------------------------------------------------------*/
+            $("body").click(function (e) {
+                if ($(e.target).hasClass('ui-content') || $(e.target).hasClass('menuClick')) {
+                    console.log("aa");
+                }
+                else {
+                    $("#menu").animate({ left: '-75%' }, "200");
+                    $("#weatherTourTitle").animate({ left: '0' }, "200");
+                    $("#settingTitle").animate({ left: '0' }, "200");
+                    $("#index_contenr").animate({ left: '0' }, "200");
+                    $("#settingbutton").animate({ left: '0' }, "200");
+                    $("body").css("overflow-y", "auto");
+                    $("#menuBlock").css("display", "none");
+                    menustate = 0;
+                }
+            })
+
+            $("#playTimeSubmit").click(function () {//右滑
+                $(thisElement).animate({ right: '-150%', opacity: '0' }, "200", function () {
+                    var scheduleObj = '{ "departureTime":"", "arrivalTime":"", "playTime":"", "spotName":"", "weatherIcon":"",  "transportation":"",  "startPosition":"", "spotID":"", "spotPicture":""}';
+                    var a = document.getElementById("playTimeSelect");
+                    scheduleObj = JSON.parse(scheduleObj);
+                    scheduleObj.departureTime = datepicker + " " + time;
+                    scheduleObj.arrivalTime = $(thisElement).find(".arrive_time").text();
+                    scheduleObj.playTime = a.options[a.selectedIndex].value;
+                    scheduleObj.spotName = $(thisElement).find(".spot_name").text();
+                    scheduleObj.weatherIcon = $(thisElement).find(".weather_image").attr("src");
+                    scheduleObj.transportation = $(thisElement).find(".transportation_image").attr("src");
+                    scheduleObj.startPosition = latitude + "," + longitude;  //??????????????????????
+                    scheduleObj.spotID = $(thisElement).find(".spot_ID").text();
+                    scheduleObj.spotPicture = $(thisElement).find(".spot_image").attr("src");
+                    lastschedule = JSON.stringify(scheduleObj);/////
+                    localStorage.setItem('scheduleKey' + scheduleNum, JSON.stringify(scheduleObj));
+                    scheduleNum++;
+                    localStorage.setItem("scheduleQuantity", scheduleNum);
+                    $(thisElement).remove();
+                });
+                $('#playTimeModel').modal('toggle');
+          
+                index_ajax();
+                setTimeout(function () {                   
+                    $("#loadingText").css("display", "none");
+                    $("#index_contenr").html("<img id='loadingImg' src='images/loading.gif'><p id ='initialText'>Loading</p>");
+                }, 700);
+                
+            })
+        });
+
+        function hammer(list_size) {
+ /*------------------------------------------------------ 觸控JS-----------------------------------------------------------*/
+            var elements = document.getElementsByClassName('spot_div');
+            var arrayElements = [].slice.call(elements);
+            var elm = list_size > 9 ? list_size - 10 : 0;
+            for (elm; elm < list_size; elm++) {
+                var element =arrayElements[elm];
+                var hammertime = new Hammer(element);
+ /*-------------------------------------------------- 左滑進旅遊籃 ---------------------------------------------------------*/
+                hammertime.on('swipeleft', function (event) {
+                    console.log("左滑後");
+                    event.target = $(event.target).parents(".spot_div");
+                    $(event.target).animate({ left: '-150%', opacity: '0' }, "200", function () {
+                        var obj = '{ "departureTime":"", "arrivalTime":"", "distance":"", "spotName":"", "weatherIcon":"", "spotTypeIcon":"", "spotTypeText":"", "spotInOutDoor":"", "transportation":"", "weatherOverview":"", "activeMark":"", "ultraviolet":"", "spotID":"", "spotPicture":"", "postcode":""}';
+                        obj = JSON.parse(obj);
+                        console.log(scheduleNum);
+                        if (scheduleNum == 0) {
+                            obj.departureTime = nowDate.getFullYear() + "-" + ((nowDate.getMonth() + 1) < 10 ? '0' : '') + (nowDate.getMonth() + 1) + "-" + (nowDate.getDate() < 10 ? '0' : '') + nowDate.getDate() + " " + nowDate.getHours() + ":" + (nowDate.getMinutes() < 10 ? '0' : '') + nowDate.getMinutes();
+                        }
+                        else {
+                            console.log(lastschedule);
+                            var lastschedules = JSON.parse(lastschedule);
+                            console.log(lastschedules.departureTime);
+                            obj.departureTime = lastschedules.departureTime.split(" ")[0] + " " + lastschedules.arrivalTime;
+
+                        }
+
+                        obj.departureTime = nowDate.getFullYear() + "-" + ((nowDate.getMonth() + 1) < 10 ? '0' : '') + (nowDate.getMonth() + 1) + "-" + (nowDate.getDate()  < 10 ? '0' : '') +  nowDate.getDate() + " " + nowDate.getHours() + ":" + (nowDate.getMinutes() < 10 ? '0' : '') + nowDate.getMinutes() ;
+                        obj.arrivalTime = $(event.target).find(".arrive_time").text();
+                        obj.distance = $(event.target).find(".distance").text();
+                        obj.spotName = $(event.target).find(".spot_name").text().slice(1,-2);
+                        obj.weatherIcon = $(event.target).find(".weather_image").attr("src");
+                        obj.weatherOverview = $(event.target).find(".overview").text();
+                        obj.spotTypeIcon = $(event.target).find(".spot_type_icon").attr("src");
+                        obj.spotTypeText = $(event.target).find(".spot_type_text").text();
+                        obj.spotInOutDoor = $(event.target).find(".inOutDoor").text();
+                        //var temp = $(event.target).find(".transportation_image").attr("src");
+                        obj.transportation = $(event.target).find(".transportation_image").attr("src");
+                        obj.activeMark = $(event.target).find(".active_image").attr("src"); //之後需判斷是否為空
+                        obj.ultraviolet = $(event.target).find(".ultraviolet").text();
+                        obj.spotID = $(event.target).find(".spot_ID").text();
+                        obj.spotPicture = $(event.target).find(".spot_image").attr("src");
+                        obj.postcode = $(event.target).find(".bl-main").attr("postcode");
+                        console.log("aa" + obj.arrivalTime);
+                        localStorage.setItem('tourBasketkey' + num, JSON.stringify(obj));
+                        num++;
+                        localStorage.setItem("spotQuantity", num);
+                        $(event.target).remove();
+                    });
+                });
+/*------------------------------------------------ 右滑點開遊玩時間 -------------------------------------------------------*/
+                hammertime.on('swiperight', function (event) {
+                    $("#playTimeClick").click();
+                    console.log("right");
+                    thisElement = $(event.target).parents(".spot_div");
+                });
+            }
+        }
+
+/*------------------------------------------------------ 選單JS-----------------------------------------------------------*/
+        var menustate = 0;
+        function clickMenu() {
+            if (menustate == 0) {
+                $("#menuBlock").css("height", $(document).height());
+                $("#menu").animate({ left: '0' }, "200", function () { menustate = 1; $("#menuBlock").css("display", "block") });
+                $("#weatherTourTitle").animate({ left: '75%' }, "200");
+                $("#settingTitle").animate({ left: '75%' }, "200");
+                $("#index_contenr").animate({ left: '75%' }, "200");
+                $("#settingbutton").animate({ left: '100%' }, "200");
+                $("body").css("overflow-y", "hidden");
+            }
+            else {
+                $("#menu").animate({ left: '-75%' }, "200");
+                $("#weatherTourTitle").animate({ left: '0' }, "200");
+                $("#settingTitle").animate({ left: '0' }, "200");
+                $("#index_contenr").animate({ left: '0' }, "200");
+                $("#settingbutton").animate({ left: '0' }, "200");
+                $("body").css("overflow-y", "auto");
+                $("#menuBlock").css("display", "none");
+                menustate = 0;
+            }
+        }
+        function inputOptionTime() {
+            if ($("#datepicker_home").val() == "") {
+                $("#time_home").html('<option value=""></option>');
+                var option = new Date();
+                option.setHours(option.getHours() + 1);
+                var optionHour = option.getHours();
+                if (optionHour > 0) {
+                    for (var hh = optionHour; hh <= 23; hh++) {
+                        $("#time_home").append('<option value="' + optionTimeRevise(hh) + '">' + optionTimeRevise(hh) + '</option>');
+                    }
+                }
+            }
+            $("#datepicker_home").change(function () {
+                $("#time_home").html('<option value=""></option>');
+                if ($("#datepicker_home").val().split("-")[2] == nowDate.getDate()) {
+                    var option = new Date();
+                    option.setHours(option.getHours() + 1);
+                    var optionHour = option.getHours();
+                    if (optionHour > 0) {
+                        for (var hh = optionHour; hh <= 23; hh++) {
+                            $("#time_home").append('<option value="' + optionTimeRevise(hh) + '">' + optionTimeRevise(hh) + '</option>');
+                        }
+                    }
+                }
+                else {
+                    for (var hh = 0; hh <= 23; hh++) {
+                        $("#time_home").append('<option value="' + optionTimeRevise(hh) + '">' + optionTimeRevise(hh) + '</option>');
+                    }
+                }
+            })
+        }
+        function optionTimeRevise(input) {
+            if (input < 10) {
+                input = "0" + input;
+            }
+            input += ":00";
+            return input;
+        }
+    </script>
+    <style>
+        html, body {
+            font-family: none;
+            overflow-x:hidden;
+        }
+
+        body {
+            padding-top: 70px;
+            padding-bottom: 70px;
+            background-color: black;
+        }
+
+        .navbar {
+            min-height: 45px;
+        }
+
+        .navbar-default {
+            background-image: linear-gradient(to bottom,#edf5cd 0,#909480 100%);
+            border-color: #909480;
+            background-color: #dff0d8;
+        }
+
+        .navbar-inverse {
+            background-image: -webkit-linear-gradient(top,#003377 0,#003377 100%);
+            top: 45px;
+            border-color: #080808;
+        }
+
+            .navbar-inverse .navbar-brand {
+                color: #f5f5f5;
+                font-weight: bold;
+                text-shadow: 2px 2px 1px #1e1e1e;
+                white-space: nowrap;
+            }
+
+        .navbar-brand {
+            height: 40px;
+            line-height: 10px;
+            padding: 15px 140px;
+            font-size: 19px;
+        }
+
+        .navbar-default .navbar-text, .navbar-inverse .navbar-text {
+            color: #1e1e1e;
+            font-weight: bold;
+            margin: -38px 0 0 120px;
+            font-size: 20px;
+            text-shadow: 2px 2px 15px #333;
+        }
+
+        .navbar-btn {
+            margin-top: 4px;
+        }
+
+        .btn {
+            padding: 6px 8px;
+            margin-top: 5px;
+            margin-left: 3px;
+        }
+
+        .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
+            background-color: #5bc0de;
+            border: none;
+        }
+
+        .nav-tabs > li > a {
+            border-radius: 0 0 0 0;
+        }
+
+        ul li {
+            list-style-type: none;
+        }
+
+        .btn-primary {
+            background-image: none;
+            background-color: #003377;
+            border-style: none;
+            box-shadow: none;
+        }
+
+        .close {
+            color: #dff0d8;
+        }
+
+        .inputwidth {
+            width: 100%;
+            height: 6vh;
+            font-weight: bold;
+            color: #000000;
+            padding-left: 3vh;
+            background-color: #b3c2ca;
+        }
+
+        .nav-tabs > li > a {
+            margin-right: 0;
+        }
+
+        .nav:after {
+            clear: none;
+        }
+
+        .nav-tabs > li {
+            margin-bottom: -0.5%;
+        }
+
+        .form-group {
+            margin-bottom: 8px;
+        }
+
+        .modal-dialog {
+            margin: 20px;
+        }
+        #menuBlock {
+            position:absolute;
+            z-index:90;
+            margin-left:75%;
+            margin-top:-20%;
+            opacity: 0.5;
+            display:none;
+        }
+        #loadingImg {
+            width:120%;
+            height:100%;
+            margin-top:20%;
+            margin-left:-10%;
+        }
+        #initialText {
+            position:absolute;
+            color:cornsilk;
+            top:52%;
+            left:36%;
+            font-size:xx-large;
+        }
+        /*------------------------------------------------------ 拉霸CS ----------------------------------------------------------*/
+        #slider12a .slider-track-high, #slider12c .slider-track-high {
+            background: #a94442;
+        }
+
+        .slider.slider-horizontal {
+            width: 90%;
+            height: 5%;
+            margin-left: 5%;
+            margin-top: -1%;
+        }
+
+        .slider {
+            vertical-align: baseline;
+        }
+
+            .slider.slider-horizontal .slider-track {
+                margin-top: -3%;
+            }
+
+        .slider-handle {
+            margin-top: -4.5%;
+        }
+
+        .slider .tooltip.top {
+            margin-top: -13%;
+        }
+ /*-------------------------------------------------------- 景點CS --------------------------------------------------------*/
+        #index_contenr {
+            position: relative;
+            margin-top: 3%;
+            background-color: black;
+        }
+
+        .spot_div {
+            position: relative;
+            padding-top: 1%;
+        }
+
+        .weather_image {
+            position: absolute;
+            z-index: 2;
+            width: 20%;
+            height: 50%;
+            top: -1%;
+            left: -1%;
+        }
+
+        .active_image {
+            width: 10%;
+            position: absolute;
+            left: 55%;
+            top: 8%;
+        }
+
+        .spot_name {
+            color: #fab75e;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            left: 1%;
+            top: 70%;
+            border-style: outset;
+            background-color: #1e1e1e;
+            border-color:#8a6d3b;
+        }
+
+        .transportation_image {
+            position: absolute;
+            z-index: 2;
+            right: 20%;
+            top: 58%;
+            width: 20%;
+        }
+
+        .arrive_time {
+            color: #fab75e;
+            font-size: x-large;
+            font-weight: bold;
+            vertical-align: bottom;
+            position: absolute;
+            z-index: 2;
+            right: 2%;
+            top: 73%;
+            text-shadow: 3px 3px 3px #000000;
+        }
+
+        .spot_image {
+            width: 100%;
+            height: 23vh;
+        }
+
+        .distance {
+            display: none;
+        }
+
+        .ultraviolet {
+            display: none;
+        }
+
+        .spot_ID {
+            display: none;
+        }
+        .activePlaceName {
+                color:#e4e9ed;
+                font-size:large;
+                font-weight:bold;
+                vertical-align:bottom;
+                position:absolute;
+                z-index:2;
+                left:1%;
+                top:50%;
+                border-style:outset;
+                background-color:#1e1e1e;
+            }
+        /*------------------------------------------------------ 景點類型CS ------------------------------------------------------*/
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 12px;
+            line-height: 1.428571429;
+            border-radius: 15px;
+            border-color: burlywood;
+        }
+
+        .btn .badge {
+            top: 0;
+            margin-left: 5%;
+        }
+
+        .badge {
+            display: inline;
+            padding: 7px 5px;
+            background-color: #89a37e;
+        }
+
+        .btn-primary .badge {
+            background-color: #8aa57f;
+        }
+
+        .spot_type_icon {
+            width: 28%;
+        }
+
+        .spot_type_box {
+            background-color: #003377;
+            left: 55%;
+            top: 20%;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 15px;
+            color: #9cef78;
+            text-shadow: 3px 3px 2px #000000;
+            padding-top: 10%;
+            padding-left: 8%;
+            box-sizing: content-box;
+            height: 90%;
+            width: 105%;
+        }
+
+        .spot_type_content {
+            top: 12%;
+            left: 0%;
+            font-weight: bold;
+            font-size: 15px;
+            color: #fcf8e3;
+            text-shadow: 3px 3px 2px #000000;
+            line-height: 250%;
+            height: 90%;
+            width: 95%;
+        }
+
+        .spot_type_content_color {
+            color: #cdcdd4;
+            position: absolute;
+            padding-left: 2%;
+        }
+
+        .spot_type_content_namecolor {
+            color: #fbcac8;
+        }
+    </style>
+</head>
+
+<body>
+    <!------ ------------------------------------------------- 上方固定列------------------------------------------------------>
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation" id="weatherTourTitle" style="z-index:80;">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button class="btn navbar-default navbar-btn menuClick" onclick="clickMenu()"><span class="glyphicon glyphicon-align-justify menuClick" aria-hidden="true" style="color:#565050"></span></button>
+                <p class="navbar-text">Weather Tour</p>
+            </div>
+        </div>
+    </nav>
+
+    <nav class="navbar-inverse navbar-fixed-top" role="navigation" id="settingTitle" style="z-index:80;">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button id="settingbutton" type="button" class="btn btn-primary navbar-btn" data-toggle="modal" data-target="#setting" style="border-radius:0;width:100%;margin-top:0;margin-left:0;margin-bottom:0;font-size:18px;line-height:1.6;font-weight:bold;text-shadow:3px 3px 2px #000000;text-align:center;position:relative;padding-left:0;">偏好設定</button>
+            </div>
+        </div>
+    </nav>
+    <!----------------------------------------------------------- 選單 -------------------------------------------------------->
+    <div id="menu" style="background-color:#909480;position:fixed;width:75%;height:95%;top:0%; overflow-y: hidden; left:-75%;">
+        <img src="images/manuimage.jpg" style="height:25vh;width:100%;" class="menuClick" />
+        <nav style="height:68.5%" class="menuClick">
+            <ul class="menuClick">
+                <li class="ui-content" style="line-height: 80%;padding-left:23%;font-size: 18px; ">
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <a href="tourbasket.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">旅遊籃</a><a href="tourbasket.html"><span class="glyphicon glyphicon-shopping-cart" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="schedule.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">我的行程</a><a href="schedule.html"><span class="glyphicon glyphicon-calendar" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-left:22%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="share.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;font-size:27px;line-height:initial;">行程庫</a><a href="share.html"><span class="glyphicon glyphicon-list-alt" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="direction.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">使用說明</a><a href="direction.html"><span class="glyphicon glyphicon-info-sign" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+                <li class="ui-content" style="line-height: 80%;padding-right:14%;font-size: 18px;">
+                    <br>
+                    <br>
+                    <br>
+                    <a href="about.html" style="color:black;font-family:'cwTeXYen', sans-serif;text-align:center;text-decoration:none;margin-left:20%;font-size:27px;line-height:initial;">關於我們</a><a href="about.html"><span class="glyphicon glyphicon-user" aria-hidden="true" style="color:#4b412a;"></span></a>
+                </li>
+            </ul>
+        </nav>
+        <img src="images/logo.png" style="width:20%;position:absolute;top:85%;left:75%;" class="menuClick" />
+    </div>
+    <img id="menuBlock" src="images/scheduleBlock.jpg">
+    <!----------------------------------------------------- 偏好設定 --------------------------------------------------------->
+
+    <div class="modal fade" id="setting" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="z-index:300;top:6.5vh">
+            <div class="modal-content" style="background-color: #355a79;color:#fcf8e3;">
+                <div class="modal-header" style="padding:10px;">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <center><h4 class="modal-title" id="myModalLabel" style="font-weight:bold;text-shadow: 3px 3px 2px #000000;">請設定以下偏好</h4></center>
+                </div>
+                <form class="form-horizontal" role="form">
+                    <div class="form-group">
+                        <label style="margin-left:2%;margin-top:3%;" for="inputEmail3" class="col-sm-2 control-label">日期:</label>
+                        <div class="col-sm-10">
+                            <input class="inputwidth" id="datepicker_home" name="datepicker" value="">
+<!-------------------------------------------------------- 日期JS -------------------------------------------------------->
+                            <script src="http://momentjs.com/downloads/moment-with-locales.js"></script>
+                            <script src="scripts/pikaday.js"></script>
+                            <script>
+                                var min = new Date();
+                                var max = new Date();
+                                max.setDate(min.getDate() + 2);
+                                new Pikaday({
+                                    field: document.getElementById('datepicker_home'),
+                                    format: 'YYYY-MM-DD',
+                                    minDate: min,
+                                    maxDate: max,
+                                });
+                            </script>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;margin-top:-2%" class="col-sm-2 control-label">時間:</label>
+                        <div class="col-sm-10" id="optionTime">
+                            <select name="time" id="time_home" class="inputwidth form-control">
+                               
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">交通:</label>
+                        <div class="col-sm-10">
+                            <select name="Translate" id="translate_home" class="inputwidth form-control">
+                                <option value="car">汽車</option>
+                                <option value="scooter">摩托車</option>
+                                <option value="walk">步行</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">地區:</label>
+                        <div class="col-sm-10">
+                            <select id="place_index" name="section" class="inputwidth form-control">
+                                <option value="">無</option>
+                                <option value="0">臺北市</option>
+                                <option value="1">基隆市</option>
+                                <option value="2">新北市</option>
+                                <option value="3">宜蘭縣</option>
+                                <option value="4">新竹縣</option>
+                                <option value="5">桃園市</option>
+                                <option value="6">苗栗縣</option>
+                                <option value="7">臺中市</option>
+                                <option value="8">彰化縣</option>
+                                <option value="9">南投縣</option>
+                                <option value="10">嘉義縣</option>
+                                <option value="11">雲林縣</option>
+                                <option value="12">臺南市</option>
+                                <option value="13">高雄市</option>
+                                <option value="14">屏東縣</option>
+                                <option value="15">臺東縣</option>
+                                <option value="16">花蓮縣</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="margin-left:2%;" class="col-sm-2 control-label">類型:</label>
+                        <div class="col-sm-10">
+                            <select id="section_index" name="section" class="inputwidth form-control">
+                                <option value="">全部</option>
+                                <option value="0">風景區</option>
+                                <option value="1">觀光工廠</option>
+                                <option value="2">休憩公園</option>
+                                <option value="3">海岸風情</option>
+                                <option value="4">湖岸風情</option>
+                                <option value="5">觀光夜市</option>
+                                <option value="6">森林遊樂區</option>
+                                <option value="7">步道健身</option>
+                                <option value="8">農牧場</option>
+                                <option value="9">名勝古蹟</option>
+                                <option value="10">瀑布</option>
+                                <option value="11">廟宇建築</option>
+                                <option value="12">遊樂園區</option>
+                                <option value="13">博物館</option>
+                                <option value="14">購物中心</option>
+                                <option value="15">活動</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label style="font-weight:bold;margin:0 0 .4em .4em;" for="translate">個人化:</label>
+                    <label style="font-weight:bold;position:absolute;top:83%;left:4%;color:#e08482;">距離</label>
+                    <label style="font-weight:bold;position:absolute;top:83%;right:4%;color:#e08482;">天氣</label>
+                    <br>
+                    <br>
+                    <input id="range" type="text" style="margin-left:5%" value="">
+<!---------------------------------------------------------- 拉霸JS ------------------------------------------------------->
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/9.8.0/bootstrap-slider.min.js"></script>
+                    <script>
+                                $("#range").slider({ id: "slider12a", min: 0, max: 10, value: 5 });
+                    </script>
+                    <hr style="margin-top:4%">
+                    <div class="form-group" style="margin-top:-7%;">
+                        <div class="col-sm-offset-2 col-sm-10">
+                            <button id="index_submit" class="btn btn-default" style="font-weight:900;width:100%;margin:0 0 -5% 0;height:7vh;border:none;border-top-left-radius: 0px;border-top-right-radius: 0px;background-image:none;background-color:#e8e8e8;text-shadow:none;font-size:18px;font-family:Microsoft JhengHei" type="button">送出</button>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+    <!--------------------------------------------------------- 景點內容 ------------------------------------------------------>
+    <div id="index_contenr" style="margin-top:3.7%;">
+        
+    </div>
+    <!------------------------------------------------------ 景點內容 ----------------------------------------------------->
+    <div id="loadingText" style="position:relative;height:4vh;"><p style="color:white;margin-left: 45%;font-size: large;margin-top: 2%;">Load . . .</p></div>
+    <a style="display:none" id="breakdown" href="breakdown.html">ppp</a>
+    <!------------------------------------------------------ 遊玩時間Model ----------------------------------------------------->
+    <a id="playTimeClick" style="display:none" data-toggle="modal" data-target="#playTimeModel" href="#playTimeModel"></a>
+    <div class="modal fade" id="playTimeModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="padding-right:0;">
+        <div class="modal-dialog" style="margin-top:50%;z-index:400;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel">請選擇遊玩時間</h4>
+                </div>
+                <div class="modal-body">
+                    <select id="playTimeSelect" name="section" class="inputwidth form-control">
+                        <option value="1">1小時</option>
+                        <option value="2">2小時</option>
+                        <option value="3">3小時</option>
+                        <option value="4">4小時</option>
+                        <option value="5">5小時</option>
+                        <option value="6">6小時</option>
+                        <option value="7">7小時</option>
+                        <option value="8">8小時</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" style="font-weight:bold;">取消</button>
+                    <button id="playTimeSubmit" type="button" class="btn btn-primary" style="font-weight:bold;">送出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!------------------------------------------------------ 下方固定列 ------------------------------------------------------->
+    <nav class="navbar-fixed-bottom" role="navigation" style="z-index:100;">
+        <div class="container-fluid">
+
+            <ul class="nav nav-tabs" style="width:110%">
+                <li class="active" style="width:50%;left:-4%;"><a href="#" style="padding-left:35%;"><img src="images/home.png" style="width:50%" /></a></li>
+                <li style="width:50%;right:4%;bottom:-5%;"><a href="lottery.html" style="border:none;padding-left:35%;background-color:#003377"><img src="images/lottery.png" style="width:50%;" /></a></li>
+            </ul>
+
+        </div>
+    </nav>
+    <script type="text/javascript" src="scripts/index.js"></script>
+    <script src="scripts/boxlayout.js"></script>
+ 
+</body>
+</html>
